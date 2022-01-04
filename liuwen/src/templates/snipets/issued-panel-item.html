@@ -1,0 +1,35 @@
+<div class="tab-pane h-100 w-100" id="issued-detail-panel-{{ art.id }}" role="tabpanel" aria-labelledby="issued-detail-tab-{{ art.id }}">
+    <div class="d-flex w-100 h-100">
+        <!-- <div class="h-100 issued-article-basic flex-column">
+            <div class="title pb-2">{{ art.title }}</div>
+            <div class="desc pb-2">{{ art.desc }}</div>
+            <div class="tags pb-2">{{ art.tags }}</div>
+        </div> -->
+        <div id="issued-article-detail-{{art.id}}" class="issued-article-detail w-100 article" style="overflow: scroll;">
+            <div class="content row">
+                <div class="col col-md-12 offset-lg-1 col-lg-10 offset-xl-2 col-xl-8 offset-xxl-3 col-xxl-6 pb-5">
+
+                    <div class="h1 mt-4">{{ art.title }}</div>
+                    <div class="w-100">{{ art.lastUpdate }}</div>
+                    <hr class="mb-5"> {% if art.desc %}
+                    <div class="specbox specbox-art-desc p-3">
+                        <strong>简介：</strong> {{ art.desc }}
+                    </div>
+                    {% endif %}
+                    <div class="content">{{ art.content | safe }}</div>
+                    <hr class="mt-5">
+                    <div class="shadow specbox specbox-art-tags w-100">
+                        <div class="px-3 py-1 title">文章标签</div>
+                        <div class="p-3 content">
+                            {% for tag in art.tags %}
+                            <a>
+                                <tag class="mb-2 me-3">{{ tag }}</tag>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

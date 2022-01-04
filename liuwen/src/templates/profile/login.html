@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>登录</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <link rel="stylesheet" href="../../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../static/css/index.css">
+</head>
+
+<body>
+    <form class="login-form">
+        <h1 class="mb-4"><small>登录</small></h1>
+        <input class="mb-3 form-control dark shadow-none" id="id_username" name="username" placeholder="用户名" required>
+        <input class="mb-3 form-control dark shadow-none" type="password" id="id_password" name="password" placeholder="密码" required>
+        <div class="d-flex justify-content-between">
+            <button id="login-cancel" class="button-login-cancel">取消</button>
+            <button id="login-submit" class="button-login ms-3">登录</button>
+        </div>
+        <div class="d-flex mt-3">
+            <p id="login-alert-error" class="alert-error"></p>
+        </div>
+
+    </form>
+
+    <script src="../../../node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="../../../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../static/js/profile/login.js"></script>
+</body>
+
+</html>

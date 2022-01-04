@@ -1,0 +1,412 @@
+@media (prefers-color-scheme: dark) {
+    body {
+        color: white;
+        background-color: #333;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    body {
+        background-color: #ddd;
+        color: black;
+    }
+}
+
+html {
+    height: -webkit-fill-available;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0px;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+}
+
+main {
+    display: flex;
+    flex-wrap: nowrap;
+    height: 100vh;
+    max-height: 100vh;
+    overflow-x: auto;
+    overflow-y: hidden;
+    font-size: 14px;
+}
+
+.bi {
+    vertical-align: -.125em;
+    pointer-events: none;
+    fill: currentColor;
+}
+
+.editor-area {
+    height: 100vh;
+}
+
+.nav-item:hover,
+.nav-item:focus {
+    background-color: #444;
+    cursor: pointer;
+}
+
+.raw-markdown,
+.rendered-html {
+    height: 100vh;
+    flex: 1;
+    flex-grow: 1;
+    padding: 1em;
+    overflow: scroll;
+}
+
+.rendered-html img {
+    max-width: 100%;
+}
+
+.rendered-html * {
+    max-width: 100%;
+}
+
+.rendered-html p {
+    word-break: break-all;
+}
+
+.raw-markdown {
+    background-color: black;
+    color: white;
+}
+
+.rendered-html {
+    background-color: #333;
+}
+
+.index-nav-tab {
+    color: white;
+    font-size: 18px;
+    text-decoration: none;
+    text-align: center;
+    background-color: transparent;
+}
+
+.index-nav-tab a {
+    color: white;
+    font-size: 18px;
+    text-decoration: none;
+    text-align: center;
+}
+
+.index-nav-tab:focus,
+.index-nav-tab:hover,
+.index-nav-tab a.active {
+    background-color: #444;
+    color: white;
+}
+
+.article-issued-box,
+.article-editing-box {
+    overflow: scroll;
+}
+
+.article-list .active {
+    background-color: #444;
+}
+
+.index-tab-view {
+    width: 280px;
+    background-color: #111;
+}
+
+.w-100 {
+    width: 100vh;
+}
+
+.h-100 {
+    height: 100vh;
+}
+
+.meta-box {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.content-box {
+    height: 100%;
+}
+
+.article-list-item {
+    font-size: 14px;
+    border-radius: 0px;
+    background-color: #111;
+    color: #ddd;
+}
+
+.article-list-item a {
+    color: white;
+    text-decoration: none;
+}
+
+.article-list-item:hover,
+.article-list-item a:hover,
+.article-list-item a:focus,
+.article-list-item a.active {
+    background-color: #333;
+}
+
+.article-list-item .article-title {
+    font-size: 14px;
+    color: white;
+    font-weight: 300;
+}
+
+.article-list-item .article-meta {
+    font-size: 12px;
+    color: #bbb;
+    font-weight: 300;
+}
+
+.article-list-item .article-meta a {
+    color: #bbb;
+}
+
+.article-list-item .article-meta a:hover,
+.article-list-item .article-meta a:active {
+    color: #eee;
+    font-weight: 400;
+}
+
+.article-issued-box {
+    width: 200px;
+    min-width: 200px;
+    background-color: #111;
+}
+
+.article-editing-box {
+    width: 200px;
+    min-width: 200px;
+    background-color: #111;
+}
+
+.article-detail-box {
+    height: 100%;
+    background-color: #333;
+}
+
+.issued-article-basic {
+    min-width: 360px;
+    width: 360px;
+    padding: 15px;
+    background-color: #100;
+}
+
+.issued-article-basic>div {
+    width: 100%;
+}
+
+.issued-article-detail {
+    background-color: #333;
+    padding: 15px;
+    overflow: scroll;
+}
+
+.issued-article-detail img {
+    max-width: 100%;
+}
+
+.form-control.dark {
+    background-color: black;
+    color: white;
+}
+
+.nomodify {
+    border: 1px solid transparent;
+    border-left: 1px solid rgb(0, 165, 0);
+}
+
+.modified {
+    border: 1px solid transparent;
+    border-left: 1px solid rgb(207, 207, 0);
+}
+
+.save-article-basic {
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    background-color: transparent;
+    border: 1px solid white;
+    color: white;
+}
+
+.check-article-basic {
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    background-color: transparent;
+    border: 1px solid white;
+    color: white;
+}
+
+.button-login {
+    width: 100px;
+    padding: 10px;
+    text-align: center;
+    background-color: transparent;
+    border: 1px solid white;
+    color: white;
+}
+
+.button-login-cancel,
+.button-dark-border {
+    width: 100px;
+    padding: 10px;
+    text-align: center;
+    background-color: transparent;
+    border: 1px solid white;
+    color: white;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.button-dark-border-secondary {
+    min-width: 100px;
+    padding: 8px 10px;
+    text-align: center;
+    background-color: transparent;
+    border: 1px solid #ccc;
+    color: #ccc;
+}
+
+.button-dark-border-secondary:hover,
+.button-dark-border-secondary:active,
+.button-dark-border-secondary:focus {
+    border: 1px solid white;
+    color: white;
+}
+
+button:focus-visible {
+    outline: none;
+}
+
+.save-article-basic:active {
+    border-color: #ccc;
+    color: #ccc;
+}
+
+.hide-article-basic {
+    color: white;
+    text-decoration: none;
+}
+
+.hide-article-basic:hover,
+.hide-article-basic:active {
+    color: white;
+}
+
+.login-form {
+    padding: 30px;
+}
+
+.border-radius-none {
+    border-radius: 0px !important;
+}
+
+.specbox {
+    color: darkslategray;
+    background-color: transparent;
+}
+
+.dark .specbox {
+    background-color: darkslategray;
+    color: white;
+}
+
+.specbox-art-tags {
+    margin-top: 80px;
+}
+
+.specbox-art-tags .title {
+    color: white;
+    background-color: #d67200;
+}
+
+.specbox-art-tags .content {
+    background-color: #b48585;
+}
+
+.dark .specbox-art-tags .title {
+    background-color: #623400;
+}
+
+.dark .specbox-art-tags .content {
+    background-color: #2e0000;
+}
+
+.dark .specbox-art-tags tag {
+    padding: 8px 30px;
+    border-radius: 30px;
+    background-color: rgb(109, 33, 180);
+    border: 0px;
+    color: #fff;
+    display: inline-block;
+}
+
+.specbox-art-author {
+    margin-top: 80px;
+    border: 1px solid rgb(53, 53, 53);
+    border-radius: 10px;
+    background-color: rgb(228, 185, 221);
+}
+
+.specbox-art-author a {
+    color: rgb(71, 0, 138);
+}
+
+.dark .specbox-art-author {
+    background-color: rgb(97, 0, 81);
+    border: 1px solid #aaa;
+}
+
+.dark .specbox-art-author a {
+    color: rgb(187, 117, 251);
+}
+
+.specbox-art-desc {
+    background-color: rgb(179, 233, 250);
+}
+
+.dark .specbox-art-desc {
+    background-color: rgb(71, 91, 97);
+}
+
+.article-recommentations a {
+    color: #003079;
+}
+
+.article-recommentations a:hover {
+    color: #001c46;
+}
+
+.dark .article-recommentations a {
+    color: #ccc;
+}
+
+.dark .article-recommentations a:hover {
+    color: rgb(255, 255, 255);
+}
+
+code:not([class]) {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.dark code:not([class]) {
+    color: #ff86c2
+}
+
+.dark .article ::selection {
+    color: black !important;
+    background-color: white;
+}
+
+.article ::selection {
+    background-color: black;
+    color: white !important;
+}

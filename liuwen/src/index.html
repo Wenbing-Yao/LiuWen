@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>流文</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../node_modules/highlight.js/styles/monokai.css">
+    <link rel="stylesheet" href="static/css/index.css">
+    <link rel="stylesheet" href="static/css/article-themes/dark.css">
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [
+                    ['$', '$'],
+                    ['\\(', '\\)']
+                ]
+            }
+        };
+    </script>
+    <script type="text/javascript" src="../jslibs/mathjax/tex-mml-chtml.js"></script>
+</head>
+
+<body class="dark">
+    <!-- <div>
+
+        <h1>💖 Hello World!</h1>
+        <p>Welcome to your Electron application.</p>
+        <p>Current theme source: <strong id="theme-source">System</strong></p>
+        <button id="toggle-dark-mode">切换主题</button>
+        <button id="reset-to-system">设置系统默认主题</button>
+    </div> -->
+    <div class="col-lg-12" style="overflow: hidden;">
+        <main class="d-block flex-column zwlw">
+            <div class="d-flex w-100 h-100">
+                <nav id="id-main-nav-div" class="d-flex flex-column text-white bg-dark" style="width: 51px;">
+                    <ul class="flex-column mb-auto ps-0 index-nav nav nav-tabs" role="tablist">
+                        <li class="text-center nav-item index-nav-tab">
+                            <a class="p-3 w-100" id="nav-issued-tab" data-bs-target="#nav-issued-panel" type="button" role="tab" aria-controls="nav-issued-panel" aria-selected="false" data-bs-toggle="tab">已发布</a>
+                        </li>
+                        <li class="text-center nav-item index-nav-tab">
+                            <a class="p-3 w-100 active" id="nav-editing-tab" data-bs-target="#nav-editing-panel-div" type="button" role="tab" aria-controls="nav-editing-panel" aria-selected="true" data-bs-toggle="tab">编辑中</a>
+                        </li>
+                    </ul>
+                    <hr>
+                    <div class="flex-column pb-3 text-center">
+                        <div class="w-100">
+                            <div id="profile-box" login="false"><a id="profile">登录</a></div>
+                            <div id="username-box" hidden>
+                                <a id="usernameShown"></a>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+
+                <div id="id-main-content-div" class="text-white tab-content" style="flex: 1; width:0; min-width:0">
+                    <div class="tab-pane h-100" id="nav-issued-panel" role="tabpanel" aria-labelledby="nav-issued-tab">
+                        <div class="d-flex w-100 h-100">
+                            <div id="nav-issued-tabs" class="article-issued-box h-100"></div>
+                            <div id="issued-tab-panel-padding" style="width: 14px; background-color:#333;">
+                                <a default-char="&lt;" hidden-char="&gt;" id="hide-issued-list" role="hide" target-id="nav-issued-tabs" style="position: relative; top: 50%; text-align:center; padding: 3px 1px; cursor:pointer; display:block;">&lt;</a>
+                            </div>
+                            <div id="nav-issued-panels" class="article-detail-box flex-column h-100" style="flex: 1; width:0; min-width:0"></div>
+                        </div>
+                    </div>
+                    <div class="tab-pane show active flex-column h-100" id="nav-editing-panel-div" role="tabpanel" aria-labelledby="nav-editing-tab">
+                        <div class="d-flex w-100 h-100">
+                            <div id="nav-editing-tabs" class="article-editing-box"></div>
+                            <div id="tab-panel-padding" style="width: 14px; background-color:#333;">
+                                <a default-char="&lt;" hidden-char="&gt;" id="hide-editing-list" role="hide" target-id="nav-editing-tabs" style="position: relative; top: 50%; text-align:center; padding: 3px 1px; cursor:pointer; display:block;">&lt;</a>
+                            </div>
+                            <div id="nav-editing-panels" class="article-detail-box flex-column h-100" style="flex: 1; width:0; min-width:0"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <footer></footer>
+    </div>
+    <script src="../node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../jslibs/highlight.min.js"></script>
+    <script src="static/js/render.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+
+</html>

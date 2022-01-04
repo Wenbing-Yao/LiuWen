@@ -1,0 +1,10 @@
+<li id="editing-tab-{{art.id}}" class="list-group-item article-list-item d-flex align-items-center nav-item p-0">
+    <div class="d-flex flex-column w-100 p-2 issued-detail-tab justify-content-start" id="editing-detail-tab-{{ art.id }}" data-bs-target="#editing-detail-panel-{{ art.id }}" type="button" role="tab" aria-controls="editing-detail-panel-{{ art.id }}" aria-selected="false"
+        data-bs-toggle="tab" editor-boxid="md-editor-for-article-{{ art.id }}" article-id="{{ art.id }}">
+        <div id="article-title-selector-{{ art.id }}" class="article-title w-100">{{ art.title }}</div>
+        <div class="article-meta justify-content-end d-flex">
+            <span>{{ art.lastUpdate }}</span>
+            <a class="article-delete ms-2" article-id="{{art.id}}">删除</a>
+        </div>
+    </div>
+</li>

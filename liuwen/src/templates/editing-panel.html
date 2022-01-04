@@ -1,0 +1,58 @@
+<div class="tab-pane h-100 w-100" id="editing-detail-panel-{{ art.id }}" role="tabpanel" aria-labelledby="editing-detail-tab-{{ art.id }}">
+    <div class="d-flex w-100 h-100">
+        <div id="issued-article-basic-box-{{ art.id }}" class="issued-article-basic justify-content-between">
+            <div class="mb-auto">
+                <div class="title pb-2">
+                    <input id="id-article-{{ art.id }}-paper-id" class="form-control dark shadow-none border-radius-none" placeholder="论文ID" value="{{ art.paperId }}">
+                </div>
+                <div class="title pb-2">
+                    <input id="id-article-{{ art.id }}-title" class="form-control dark shadow-none border-radius-none" placeholder="标题" value="{{ art.title }}">
+                </div>
+                <div class="desc pb-2">
+                    <textarea id="id-article-{{ art.id }}-desc" class="form-control dark shadow-none border-radius-none" placeholder="简述" rows="6">{{ art.desc }}</textarea>
+                </div>
+                <div class="tags pb-2">
+                    <input id="id-article-{{ art.id }}-tags" class="form-control dark shadow-none border-radius-none" placeholder="标签" value="{{ art.tags | join(',') }}">
+                </div>
+                <div class="pb-2">
+                    <div>当前状态：<strong id="article-status-{{art.id}}" class="text-info">
+                        {% if art.status %}
+                            {{ art.status }}
+                        {% else %}
+                            {% if art.contributed %}已提交
+                            {% else %}尚未同步
+                            {% endif %}
+                        {% endif %}
+                    </strong></div>
+                </div>
+                <div class="row">
+                    <div class="col"><button id="check-article-meta-{{ art.id }}-button" class="check-article-basic mt-3" article-id="{{ art.id }}">
+                        检查
+                        <svg id="meta-ok-{{art.id}}" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check2" viewBox="0 0 16 16" hidden>
+                        <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+                        </svg>
+                        <svg id="meta-nok-{{art.id}}" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16" hidden>
+                        <path fill-rule="evenodd" d="M13.854 2.146a.5.5 0 0 1 0 .708l-11 11a.5.5 0 0 1-.708-.708l11-11a.5.5 0 0 1 .708 0Z"/>
+                        <path fill-rule="evenodd" d="M2.146 2.146a.5.5 0 0 0 0 .708l11 11a.5.5 0 0 0 .708-.708l-11-11a.5.5 0 0 0-.708 0Z"/>
+                        </svg>
+                        </button></div>
+                    <div class="col"><button id="save-article-{{ art.id }}-button" class="save-article-button save-article-basic mt-3" article-id="{{ art.id }}" role="article">保存</button></div>
+                </div>
+
+                <div class="row mt-2">
+                    <div id="article-info-box-{{art.id}}" class="mb-2"></div>
+                </div>
+            </div>
+            <div class="mt-auto">
+                <button class="btn btn-outline-light w-100 syn-to-cloud" article-id="{{ art.id }}">同步到云端</button>
+                <button id="article-issue-{{art.id}}" class="btn btn-outline-light w-100 article-issue mt-3" article-id="{{ art.id }}" {% if art.contributed %} disabled {% endif %}>投稿</button>
+            </div>
+        </div>
+        <div style="width: 14px; background-color:#333;">
+            <a default-char="&lt;" hidden-char="&gt;" id="hide-article-{{ art.id }}-basic" class="hide-article-basic" role="hide" target-id="issued-article-basic-box-{{ art.id }}" style="position: relative; top: 50%; text-align:center; padding: 3px 1px; cursor:pointer; display:block;">&lt;</a>
+        </div>
+        <div style="flex: 1; width:0; min-width:0">
+            {% include 'editing-panel-md.html' %}
+        </div>
+    </div>
+</div>

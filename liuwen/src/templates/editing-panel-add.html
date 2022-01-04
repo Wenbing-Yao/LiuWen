@@ -1,0 +1,30 @@
+<div class="tab-pane h-100 w-100" id="issued-detail-panel-add" role="tabpanel" aria-labelledby="editing-detail-tab-add">
+    <div class="d-flex w-100 h-100">
+        <div id="issued-article-basic-box-add" class="h-100 issued-article-basic flex-column">
+            <div class="title pb-2">
+                <input id="id-article-paper-id-add" class="form-control dark shadow-none border-radius-none" placeholder="论文ID">
+            </div>
+            <div class="title pb-2">
+                <input id="id-article-title-add" class="form-control dark shadow-none border-radius-none" placeholder="标题">
+            </div>
+            <div class="desc pb-2">
+                <textarea id="id-article-desc-add" class="form-control dark shadow-none border-radius-none" placeholder="简述" rows="10"></textarea>
+            </div>
+            <div class="tags pb-2">
+                <input id="id-article-tags-add" class="form-control dark shadow-none border-radius-none" placeholder="标签">
+            </div>
+            <button id="save-article-button-add" class="save-article-button save-article-basic" article-id="" role="creation">保存</button>
+        </div>
+        <div class="h-100 flex-column" style="width: 14px; background-color:#333;">
+            <a default-char="&lt;" hidden-char="&gt;" id="hide-article-basic-add" class="hide-article-basic" role="hide" target-id="issued-article-basic-box-add" style="position: relative; top: 50%; text-align:center; padding: 3px 1px; cursor:pointer; display:block;">&lt;</a>
+        </div>
+        <div class="h-100 flex-column w-100">
+            <div class="editor-area w-100 h-100">
+                <div class="content-box w-100 flex-colomn d-flex">
+                    <div id="md-editor-for-article-add" class="raw-markdown nomodify md-editor-for-article" style="height:100vh;" article-id="" rendered-id="rendered-html-for-article-add"></div>
+                    <div id="rendered-html-for-article-add" class="rendered-html rendered-html-for-article"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

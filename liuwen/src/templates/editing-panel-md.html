@@ -1,0 +1,9 @@
+<div class="editor-area w-100 h-100">
+    <div class="content-box w-100 flex-colomn d-flex">
+        <div id="md-editor-for-article-{{ art.id }}" class="raw-markdown nomodify md-editor-for-article" style="height:100vh;" article-id="{{ art.id }}" rendered-id="rendered-html-for-article-{{ art.id }}"></div>
+        <div style="width: 14px; background-color:#333;">
+            <a default-char="&gt;" hidden-char="&lt;" id="hide-rendered-html-{{ art.id }}" class="hide-article-basic" role="hide" target-id="rendered-html-for-article-{{ art.id }}" style="position: relative; top: 50%; text-align:center; padding: 3px 1px; cursor:pointer; display:block;">&gt;</a>
+        </div>
+        <div id="rendered-html-for-article-{{ art.id }}" class="rendered-html rendered-html-for-article article"></div>
+    </div>
+</div>
