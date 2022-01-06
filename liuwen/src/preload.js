@@ -226,7 +226,7 @@ function initMarkdownEditor(boxid, articleId) {
         return
     }
 
-    amdRequire(['vs/editor/editor.main'], async function() {
+    amdRequire(['vs/editor/editor.main'], async function () {
         monaco.editor.defineTheme('default-theme', {
             base: 'vs-dark',
             inherit: true,
@@ -255,11 +255,9 @@ function initMarkdownEditor(boxid, articleId) {
             lineHeight: 24,
             language: 'markdown',
             lineNumbers: 'on',
-            lineNumbersMinChars: 2,
             minimap: {
                 enabled: false
             },
-            renderLineHighlight: true, //选中行外部边框
             theme: 'default-theme',
             wordWrap: 'on',
         });

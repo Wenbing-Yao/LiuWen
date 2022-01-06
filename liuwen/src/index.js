@@ -1,6 +1,7 @@
 const { app, BrowserWindow, dialog, globalShortcut, ipcMain, nativeTheme, shell } = require('electron')
 const path = require('path')
 const fs = require('fs')
+const isDev = false;
 
 // const { db: liuwenDb } = require('./modules/db')
 // const { accountConfig } = require('./modules/config')
@@ -83,7 +84,7 @@ function fetchFileContent() {
     return null
 }
 
-const createWindow = async() => {
+const createWindow = async () => {
     // Create the browser window.
     if (!mainWindow) {
         mainWindow = new BrowserWindow({
@@ -115,7 +116,11 @@ const createWindow = async() => {
     })
 
     // Open the DevTools.
-    mainWindow.webContents.openDevTools();
+    if (isDev) {
+        console.log('这是开发者环境，打开开发者工具。')
+        console.log('this is a development environment!', isDev)
+        mainWindow.webContents.openDevTools();
+    }
 
     // var pw = await accountConfig.dbPassword()
 

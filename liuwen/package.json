@@ -21,7 +21,8 @@
     "config": {
         "forge": {
             "packagerConfig": {},
-            "makers": [{
+            "makers": [
+                {
                     "name": "@electron-forge/maker-squirrel",
                     "config": {
                         "name": "liuwen"
@@ -45,14 +46,13 @@
         }
     },
     "dependencies": {
-        "@pakjiddat/toc": "^1.0.1",
-        "better-sqlite3": "^7.4.3",
+        "@popperjs/core": "^2.11.2",
         "bootstrap": "^5.1.2",
         "crypto": "^1.0.1",
         "electron-is-dev": "^2.0.0",
         "electron-squirrel-startup": "^1.0.0",
+        "form-data": "^4.0.0",
         "highlight.js": "^11.3.1",
-        "highlightjs": "^9.16.2",
         "is-valid-path": "^0.1.1",
         "jquery": "^3.6.0",
         "jssoup": "^0.0.15",
@@ -69,10 +69,7 @@
         "node-fetch": "^2.6.6",
         "nunjucks": "^3.2.3",
         "sequelize": "^6.7.0",
-        "sqlite3": "https://github.com/mapbox/node-sqlite3/tarball/master",
-        "update-electron-app": "^2.0.1",
-        "uuid": "^8.3.2",
-        "write-file-atomic": "^3.0.3"
+        "uuid": "^8.3.2"
     },
     "devDependencies": {
         "@electron-forge/cli": "^6.0.0-beta.61",
@@ -83,5 +80,6 @@
         "electron": "15.1.1",
         "electron-rebuild": "^3.2.3",
         "sequelize-cli": "^6.2.0"
-    }
+    },
+    "postinstall": "electron-builder install-app-deps"
 }
