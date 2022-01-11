@@ -4,7 +4,9 @@ const { mkdirSync } = require('fs')
 const path = require('path');
 const keytar = require('keytar')
 const md5 = require('md5')
+const defaultUser = 'LiuwenAppUserDefault2022'
 
+const isDev = false
 
 CONFIG = {
     db: {
@@ -203,6 +205,7 @@ class AccountConfig {
 const URLS = {
     // 'domain': 'http://www.paperexplained.com',
     'domain': 'https://paperexplained.cn',
+    'dev-domain': 'http://www.paperexplained.com',
     'urls': {
         'accounts': {
             'GET': {
@@ -278,9 +281,10 @@ const WORK_DIR = '/tmp'
 const WORK_BASE = path.join(WORK_DIR, 'pe/images')
 
 module.exports = {
-    domain: 'http://paperexplained.com',
-    dirConfig: new DirConfig(),
     accountConfig: new AccountConfig(),
+    defaultUser: defaultUser,
+    dirConfig: new DirConfig(),
+    isDev,
     URLS,
     WORK_DIR,
     WORK_BASE,

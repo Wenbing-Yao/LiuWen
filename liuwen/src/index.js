@@ -1,21 +1,23 @@
-const { app, BrowserWindow, dialog, globalShortcut, ipcMain, nativeTheme, shell } = require('electron')
+const { app, BrowserWindow, dialog, globalShortcut, ipcMain, nativeTheme, shell, Menu } = require('electron')
+const { configure } = require('nunjucks')
 const path = require('path')
 const fs = require('fs')
-const isDev = false;
 
-// const { db: liuwenDb } = require('./modules/db')
-// const { accountConfig } = require('./modules/config')
+const { isDev } = require('./modules/config')
 const { ArticleStorage } = require('./modules/ArticleStorage')
 const { CloudArticle } = require('./modules/CloudArticle')
 const { PaperExplainedClient } = require('./modules/Communication.js')
 const { closeArticleDeleteModal, fetchLocalId, openArticleDeleteModal } = require('./modules/Modal')
+const { getKeyValue } = require('./modules/RawKeyValueStore')
 const { settingStorage } = require('./modules/UserSettings')
+const { addLocalFileToEditor, openLocalMarkdown } = require('./menus/handler')
+const { addSupportedLanguage, getLanguage, getSupportedLanguages, setLocaleLang, trans } = require('./locale/i18n')
 
+let _ = trans
 let mainWindow = null
 let loginWindow = null
 let userinfoModal = null
 let peClient = null
-
 
 function getPeClient(username = null) {
     if (username == null)
@@ -66,39 +68,86 @@ function saveFileContent(file, content) {
     return file
 }
 
-function fetchFileContent() {
-    var fpath = dialog.showOpenDialogSync({
-        properties: ['openFile'],
-        filters: [
-            { name: 'Markdown', extensions: ['md', 'markdown'] },
-            { name: '所有文件', extensions: ['*'] }
-        ]
+const isMac = process.platform === 'darwin'
+
+function buildLocaleIndex(callback) {
+
+    let project_root = path.dirname(__dirname)
+    let lang = getLanguage()
+    let ofpath = `${project_root}/src/templates/langs/index-${app.getVersion()}-${lang}.html`
+
+    env = configure(__dirname)
+    env.addFilter('trans', trans)
+    let index_fpath = path.join(__dirname, './templates/index.html')
+    env.render(index_fpath, {
+        project_root: "../../.."
+    }, (err, res) => {
+        fs.writeFileSync(ofpath, res)
+        callback(ofpath)
     })
 
-    if (fpath) {
-        console.log(`文件路径为：${fpath}`)
-        return fpath[0]
+    return ofpath
+}
+
+function configureLanguage() {
+    const LANGUAGE_KEY = 'language'
+    const SUPPORTED_LANGUAGES_KEY = 'supported-languages'
+    var language = getKeyValue(LANGUAGE_KEY)
+    if (!language) {
+        language = app.getLocale()
     }
 
-    console.log('未选择文件')
-    return null
+    setLocaleLang(language)
+
+    var supported_languages = getKeyValue(SUPPORTED_LANGUAGES_KEY)
+    if (!supported_languages) {
+        supported_languages = []
+    }
+    addSupportedLanguage(supported_languages)
 }
 
 const createWindow = async () => {
-    // Create the browser window.
+    configureLanguage()
+
     if (!mainWindow) {
         mainWindow = new BrowserWindow({
             width: 1920,
             height: 1080,
+            title: _("LiuWen"),
+            // frame: false,
+            // titleBarStyle: 'customButtonsOnHover',
+            // titleBarStyle: 'hidden',
+            // titleBarOverlay: true,
+            // transparent: true,
+            icon: isMac ? path.join(__dirname, 'static/logo.icns') : path.join(__dirname, 'static/logo.png'),
             webPreferences: {
                 'preload': path.join(__dirname, 'preload.js')
             }
         });
+
+        if (isMac) {
+            app.dock.setIcon(path.join(__dirname, 'static/logo.icns'))
+        } else {
+            mainWindow.setIcon(path.join(__dirname, 'static/logo.png'))
+        }
     }
+
+    var menu = null
+    var menuTemplate = null
+    if (isMac) {
+        menuTemplate = require('./menus/darwin').menuTemplate
+    } else {
+        menuTemplate = require('./menus/windows').menuTemplate
+    }
+    menu = Menu.buildFromTemplate(menuTemplate)
+
+    Menu.setApplicationMenu(menu)
     // peClient = new PaperExplainedClient('articles')
 
     // and load the index.html of the app.
-    mainWindow.loadFile(path.join(__dirname, 'index.html'));
+    // let index_fpath = path.join(__dirname, './templates/index.html')
+    // mainWindow.loadFile(index_fpath)
+    buildLocaleIndex((src) => mainWindow.loadFile(src))
 
     // Load theme handler
     // setThemeHandler()
@@ -126,7 +175,17 @@ const createWindow = async () => {
 
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
+        mainWindow.webContents.send('config:language', getLanguage())
+        mainWindow.webContents.send('config:supported-languages', getSupportedLanguages())
         // getFileFromUser();
+    })
+
+    app.setAboutPanelOptions({
+        applicationName: _("LiuWen"),
+        applicationVersion: `${app.getVersion()}`,
+        version: `v${app.getVersion()}`,
+        website: "http://paperexplained.cn",
+        iconPath: isMac ? path.join(__dirname, 'static/logo.icns') : path.join(__dirname, 'static/logo.png')
     })
 
     // mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -344,23 +403,86 @@ ipcMain.on('userinfo:render', (event) => {
     event.reply('userinfo:render-reply', userinfo)
 })
 
+function buildLocaleLogin(callback) {
+    let project_root = path.dirname(__dirname)
+    let lang = getLanguage()
+    let ofdir = `${project_root}/src/templates/langs/profile`
+    let ofpath = `${ofdir}/login-${app.getVersion()}-${lang}.html`
+
+    if (!fs.existsSync(ofdir)) {
+        fs.mkdirSync(ofdir)
+    }
+
+    env = configure(__dirname)
+    env.addFilter('trans', trans)
+    let index_fpath = path.join(__dirname, './templates/profile/login.html')
+    env.render(index_fpath, {
+        rel_proj_root: "../../../.."
+    }, (err, res) => {
+        if (err) {
+            console.log(err)
+            return
+        }
+        fs.writeFileSync(ofpath, res)
+        callback(ofpath)
+    })
+
+    return ofpath
+}
+
+function buildLocaleUserInfo(callback) {
+    let project_root = path.dirname(__dirname)
+    let lang = getLanguage()
+    let ofdir = `${project_root}/src/templates/langs/profile`
+    let ofpath = `${ofdir}/user-${app.getVersion()}-${lang}.html`
+
+    if (!fs.existsSync(ofdir)) {
+        fs.mkdirSync(ofdir)
+    }
+
+    env = configure(__dirname)
+    env.addFilter('trans', trans)
+    let index_fpath = path.join(__dirname, './templates/profile/user.html')
+    env.render(index_fpath, {
+        rel_proj_root: "../../../.."
+    }, (err, res) => {
+        if (err) {
+            console.log(err)
+            return
+        }
+        fs.writeFileSync(ofpath, res)
+        callback(ofpath)
+    })
+
+    return ofpath
+}
+
 
 function openLoginModal() {
     // Child login window
     if (!loginWindow) {
-        loginWindow = new BrowserWindow({
+
+        var options = {
             width: 360,
             height: 400,
             parent: mainWindow,
             modal: true,
             show: false,
-            title: "登录",
+            title: _("Login"),
             webPreferences: {
                 'preload': path.join(__dirname, 'loginPreload.js')
             }
-        })
+        }
+        if (!isMac) {
+            options.frame = false
+            options.titleBarStyle = 'hidden'
+        }
+        loginWindow = new BrowserWindow(options)
     }
-    loginWindow.loadFile(path.join(__dirname, 'templates/profile/login.html'))
+    // loginWindow.loadFile(path.join(__dirname, 'templates/profile/login.html'))
+
+    buildLocaleLogin((src) => loginWindow.loadFile(src))
+
     loginWindow.once('ready-to-show', () => {
         loginWindow.show()
     })
@@ -372,20 +494,29 @@ function openLoginModal() {
 
 function openUserinfoModal() {
     if (!userinfoModal) {
-        userinfoModal = new BrowserWindow({
+        var options = {
             width: 400,
             height: 400,
             parent: mainWindow,
+            // frame: false,
+            // titleBarStyle: 'hidden',
             modal: true,
             show: false,
-            title: "用户信息",
+            title: _("User Profile"),
             webPreferences: {
                 'preload': path.join(__dirname, 'preloads/userinfoPreload.js')
             }
-        })
+        }
+
+        if (!isMac) {
+            options.frame = false
+            options.titleBarStyle = 'hidden'
+        }
+        userinfoModal = new BrowserWindow(options)
     }
 
     userinfoModal.loadFile(path.join(__dirname, 'templates/profile/user.html'))
+    buildLocaleUserInfo((src) => userinfoModal.loadFile(src))
     userinfoModal.once('ready-to-show', () => {
         userinfoModal.show()
     })
@@ -417,47 +548,6 @@ ipcMain.on('profile:login-show', (event) => {
 
 ipcMain.on('profile:userinfo-show', (event) => {
     openUserinfoModal()
-    try {
-        peClient = getPeClient()
-        var checkLogin = peClient.get('checkLogin', (res) => {
-            console.info('login success: ', res.login)
-        }, (err) => {
-            console.error('login error: ', err)
-        })
-
-        checkLogin.then((data) => {
-            console.info('promise check login: ', data)
-        })
-
-        var listArticle = peClient.get('listArticle', (res) => {
-            console.info('Article List: ', res)
-        }, (err) => {
-            console.error('Article list error: ', err)
-        })
-
-        listArticle.then((data) => {
-            console.info('promise list article: ', data)
-        })
-
-        var paperTitle = peClient.post('paperTitle', { paper_id: '62cb06e6d7164d26a1957c374c7669d720831d64' }, null, (res) => {
-            console.info('Paper Title: ', res.title)
-        }, (err) => {
-            console.error('Paper Title error: ', err)
-        })
-
-        paperTitle.then(data => {
-            console.log('promise paper title: ', data)
-        })
-
-
-        peClient.post('articleTitle', { article_id: 23 }, null, (res) => {
-            console.info('Article Title: ', res.title)
-        }, (err) => {
-            console.error('Article Title error: ', err)
-        })
-    } catch (err) {
-        console.error(err)
-    }
 })
 
 ipcMain.on('profile:userinfo-close', (event) => {
@@ -505,34 +595,6 @@ ipcMain.on('link:open', (event, link) => {
     shell.openExternal(link);
 })
 
-function addLocalFileToEditor(fpath) {
-    var store = getStorage()
-    var articleInfo = {}
-    articleInfo.filePath = fpath
-    var filename = path.parse(fpath).name
-    articleInfo.title = filename
-    articleInfo.paperId = ""
-    articleInfo.desc = ""
-    articleInfo.tags = ""
-
-    var localId = store.getArticleIdByFilePath(fpath)
-    if (localId) {
-        console.log(`这篇文章已经在编辑器中了！文件路径：${fpath}`)
-        var art = store.getArticle(localId)
-        if (art) {
-            mainWindow.webContents.send('article:show-rendered', art)
-            return
-        }
-        store.deleteReversePath(fpath)
-        localId = null
-    }
-
-    console.log(`文章不在编辑器中，现在添加：${fpath}`)
-    localId = store.createArticle(articleInfo)
-    mainWindow.webContents.send('article:create-reply',
-        store.getArticle(localId))
-}
-
 ipcMain.on('article:file-dropped', (event, fpath) => {
     addLocalFileToEditor(fpath)
 })
@@ -541,8 +603,7 @@ ipcMain.on('article:file-dropped', (event, fpath) => {
 app.whenReady().then(() => {
     // 注册一个'CommandOrControl+X' 快捷键监听器
     const ret = globalShortcut.register('CommandOrControl+O', () => {
-        var fpath = fetchFileContent()
-        addLocalFileToEditor(fpath)
+        openLocalMarkdown(null, mainWindow, null)
     })
 
     if (!ret) {

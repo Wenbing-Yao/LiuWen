@@ -6,6 +6,10 @@ const amdLoader = require('monaco-editor/min/vs/loader.js');
 const amdRequire = amdLoader.require;
 // const morphdom = require('morphdom');
 const { ArticleStateSync } = require('./modules/Task')
+const { formatText, insertTableDetail, insertToMarkdownEditor } = require('./modules/MarkdownInsertHandler')
+const { trans, setLocaleLang, addSupportedLanguage, getLanguage } = require('./locale/i18n');
+const { readFileSync, lstatSync } = require('fs');
+const _ = trans
 
 
 let editorBuf = new Map();
@@ -28,7 +32,11 @@ const ElementInfo = {
     EditingTab: "editing-tab-",
     EditingTabTrigger: "editing-detail-tab-",
     EditingPanel: "editing-detail-panel-",
-    EditingRenderedHtml: "rendered-html-for-article-"
+    EditingRenderedHtml: "rendered-html-for-article-",
+    IssuedTabTrigger: "issued-detail-tab-",
+    IssuedRenderedHtml: "issued-detail-panel-",
+    NavIssuedTab: "nav-issued-tab",
+    NavEditingTab: "nav-editing-tab"
 }
 
 function setEditorEditing(articleId) {
@@ -251,6 +259,7 @@ function initMarkdownEditor(boxid, articleId) {
             // value: [
             //     boxid
             // ].join('\n'),
+            fontFamily: 'monospace',
             fontSize: 15,
             lineHeight: 24,
             language: 'markdown',
@@ -431,13 +440,23 @@ contextBridge.exposeInMainWorld('testString', {
     'astring': () => 'aString'
 })
 
+function getTemplateEnv() {
+    let env = configure(path.join(__dirname, 'templates'))
+    env.addFilter('trans', trans)
+    return env
+}
+
 
 function renderIssued(articles) {
 
-    env = configure(path.join(__dirname, 'templates'))
+    let env = getTemplateEnv()
     env.render(TEMPLATES_CONFIG['issued-tab-list'], {
         'articles': articles
     }, (err, res) => {
+        if (err) {
+            console.log(err)
+            return
+        }
         const element = document.getElementById('nav-issued-tabs')
         if (element) element.innerHTML = res
     })
@@ -456,7 +475,7 @@ function renderIssued(articles) {
 }
 
 function renderEditing(articles) {
-    env = configure(path.join(__dirname, 'templates'))
+    let env = getTemplateEnv()
     env.render(TEMPLATES_CONFIG['editing-tab-list'], {
         'articles': articles
     }, (err, res) => {
@@ -470,6 +489,10 @@ function renderEditing(articles) {
     env.render(TEMPLATES_CONFIG['editing-panel-list'], {
         'articles': articles
     }, (err, res) => {
+        if (err) {
+            console.log(err)
+            return
+        }
         const element = document.getElementById('nav-editing-panels')
         if (element) element.innerHTML = res
     })
@@ -480,7 +503,7 @@ function renderEditing(articles) {
 }
 
 function addNewEditingTab(article) {
-    env = configure(path.join(__dirname, 'templates'))
+    let env = getTemplateEnv()
     env.render(TEMPLATES_CONFIG['editing-tab-item'], {
         'art': article
     }, (err, res) => {
@@ -495,7 +518,7 @@ function addNewEditingTab(article) {
 
 
 function addIssuedArticleTab(article) {
-    env = configure(path.join(__dirname, 'templates'))
+    let env = getTemplateEnv()
     env.render(TEMPLATES_CONFIG['issued-tab-item'], {
         'art': article
     }, (err, res) => {
@@ -510,7 +533,7 @@ function addIssuedArticleTab(article) {
 }
 
 function addNewEditingPanel(article, show = false) {
-    env = configure(path.join(__dirname, 'templates'))
+    let env = getTemplateEnv()
     env.render(TEMPLATES_CONFIG['editing-panel-item'], {
         'art': article
     }, (err, res) => {
@@ -528,11 +551,12 @@ function addNewEditingPanel(article, show = false) {
     })
 }
 
-function addIssuedArticlePanel(article) {
-    env = configure(path.join(__dirname, 'templates'))
-    var md = new Markdown()
+function addIssuedArticlePanel(article, show = false) {
+    let env = getTemplateEnv()
+    var md = new Markdown(article.mdFpath ? path.dirname(article.mdFpath) : null)
     var notoc = true
     article.content = md.convert(article.mdContent, notoc, true)
+
     env.render(TEMPLATES_CONFIG['issued-panel-item'], {
         'art': article
     }, (err, res) => {
@@ -542,10 +566,13 @@ function addIssuedArticlePanel(article) {
         }
         var ele = document.getElementById('id-issued-panel-list')
         ele.lastElementChild.insertAdjacentHTML('beforebegin', res)
-        document.querySelectorAll(`#${ElementInfo.EditingRenderedHtml}${article.id} pre code`).forEach((el) => {
+        document.querySelectorAll(`#${ElementInfo.IssuedRenderedHtml}${article.id} pre code`).forEach((el) => {
             hljs = require('../node_modules/highlight.js')
             hljs.highlightElement(el)
         });
+        if (show) {
+            showIssuedDetailTab(article)
+        }
     })
 }
 
@@ -554,28 +581,77 @@ function addEditingToNew(article, show = false) {
     addNewEditingPanel(article, show)
 }
 
-function addIssuedArticle(article) {
+function addIssuedArticle(article, show = false) {
     if (issuedArticleSet.has(article.id)) {
         console.warn(`article has been added: ${article.id}`)
+        if (show) { showIssuedDetailTab(article) }
         return
     }
     addIssuedArticleTab(article)
-    addIssuedArticlePanel(article)
+    addIssuedArticlePanel(article, show)
+
+    issuedArticleSet.add(article.id)
+}
+
+function showTab(elementId) {
+    var ele = document.getElementById(elementId)
+    if (!ele) {
+        return false
+    }
+    const bootstrap = require('bootstrap')
+    var tabTrigger = new bootstrap.Tab(ele)
+    tabTrigger.show()
+
+    return true
 }
 
 function showEditingDetailTab(article) {
     var ele = document.getElementById(`${ElementInfo.EditingTabTrigger}${article.id}`)
-    if (!ele) {
-        console.log(`元素未找到！ 文章ID为: ${article.id}`)
-        return
-    }
+    if (!ele) return false
+
     const bootstrap = require('bootstrap')
     var tabTrigger = new bootstrap.Tab(ele)
-
     var boxid = ele.getAttribute('editor-boxid')
     initMarkdownEditor(boxid, article.id)
+    showTab(ElementInfo.NavEditingTab)
+
     tabTrigger.show()
+    return true
 }
+
+function showIssuedDetailTab(article) {
+    let ele = document.getElementById(`${ElementInfo.IssuedTabTrigger}${article.id}`)
+    if (!ele) {
+        console.log(`issued detail tab not found: ${article.id}`)
+        return false
+    }
+
+    const bootstrap = require('bootstrap')
+    let tabTrigger = new bootstrap.Tab(ele)
+    showTab(ElementInfo.NavIssuedTab)
+    tabTrigger.show()
+
+    return true
+}
+
+function getActiveEditor() {
+    var active = document.querySelector("#id-editing-tab-list .active")
+    if (!active) return null
+
+    var boxid = active.getAttribute('editor-boxid')
+    var editor = editorBuf.get(boxid)
+    return editor
+}
+
+ipcRenderer.on('article:insert', (event, type) => {
+    var editor = getActiveEditor()
+    insertToMarkdownEditor(editor, type)
+})
+
+ipcRenderer.on('article:format', (event, type) => {
+    var editor = getActiveEditor()
+    formatText(editor, type)
+})
 
 ipcRenderer.on('article:create-reply', (event, article) => {
     addEditingToNew(article, true)
@@ -589,7 +665,14 @@ ipcRenderer.on('article:create-reply', (event, article) => {
 })
 
 ipcRenderer.on('article:show-rendered', (event, article) => {
-    showEditingDetailTab(article)
+    if (showEditingDetailTab(article)) {
+        return
+    }
+    if (showIssuedDetailTab(article)) {
+        return
+    }
+
+    console.log(`元素未找到！ 文章ID为: ${article.id}`)
 })
 
 function createArticle() {
@@ -660,7 +743,7 @@ function setCheckIndicator(articleId, ok) {
 ipcRenderer.on('article:paper-title-reply', (event, paperId, articleId, title, info) => {
     var infoEle = document.getElementById(`${ArticleInfoBoxPrefix}${articleId}`)
     if (!title) {
-        env = configure(path.join(__dirname, 'templates'))
+        let env = getTemplateEnv()
         env.render(TEMPLATES_CONFIG['article-info-box'], { infos: [info] },
             (err, res) => {
                 if (err) console.error(err)
@@ -687,6 +770,11 @@ function articleIssue(articleId) {
 
 function articleDelete(articleId) {
     ipcRenderer.send('article:delete', articleId, true, false)
+}
+
+function articleInsertTable(row, col) {
+    var editor = getActiveEditor()
+    insertTableDetail(editor, row, col)
 }
 
 function disableArticleIssuedBtn(articleId, disabled = true) {
@@ -855,6 +943,21 @@ ipcRenderer.on('article:add-issued', (event, article) => {
     taskFinished.set(article.id, true)
 })
 
+ipcRenderer.on('article:show-markdown-help', (event) => {
+    var lang = getLanguage()
+    var fpath = path.join(__dirname, `docs/markdown-help.${lang}.md`)
+    var mdContent = readFileSync(fpath).toString()
+    var article = {
+        id: 'local-id-markdown-help',
+        title: _('Markdown Help'),
+        tags: [_('Markdown Help')],
+        mdContent: mdContent,
+        mdFpath: fpath
+    }
+    console.log(`add command line help for lang: ${lang}`)
+    addIssuedArticle(article, true)
+})
+
 function openExternalLink(link) {
     ipcRenderer.send('link:open', link)
 }
@@ -894,6 +997,13 @@ ipcRenderer.on('profile:login-check-reply', (event, isLogin, username) => {
     ipcRenderer.send('article:render', 'issued')
 })
 
+ipcRenderer.on('config:language', (event, language) => {
+    setLocaleLang(language)
+})
+ipcRenderer.on('config:supported-languages', (event, supported_languages) => {
+    addSupportedLanguage(supported_languages)
+})
+
 
 function removeEditingElement(articleId) {
     var tabEle = document.getElementById(`${ElementInfo.EditingTab}${articleId}`)
@@ -921,7 +1031,8 @@ contextBridge.exposeInMainWorld('article', {
     'synArticleToCloud': synArticleToCloud,
     'updateArticle': updateArticle,
     'articleIssue': articleIssue,
-    'articleDelete': articleDelete
+    'articleDelete': articleDelete,
+    'articleInsertTable': articleInsertTable
 })
 
 contextBridge.exposeInMainWorld('profile', {

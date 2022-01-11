@@ -1,5 +1,6 @@
 const marked = require('marked')
 const { v4: uuidv4 } = require('uuid');
+const path = require('path')
 const JSSoup = require('jssoup').default
 
 const renderer = {
@@ -226,13 +227,14 @@ class ToCNode {
 }
 
 class Markdown {
-    constructor() {
+    constructor(fpath = null) {
         this.marked = marked
         this.dirRoot = null
         this.soup = null
         this.figPrefix = '图'
         this.figSuffix = '：'
         this.figNumber = 1
+        this.fpath = fpath
     }
 
     numberAllFigureCaptain(html, soupOnly = false) {
@@ -268,6 +270,15 @@ class Markdown {
 
             }
             this.figNumber += 1
+
+            if (!this.fpath) {
+                continue
+            }
+
+            var img = fig.find('img')
+            if (!img || !img.attrs || !img.attrs.src || !img.attrs.src.startsWith('.')) continue
+
+            img.attrs.src = path.join(this.fpath, img.attrs.src)
         }
 
         if (soupOnly) {
@@ -326,7 +337,6 @@ class Markdown {
         // console.log(firstEl)
         if (firstEl.attrs.id === undefined) {
             firstEl.attrs.id = uuidv4()
-            console.log('add element for', firstEl)
         }
 
         var allSiblings = firstEl.nextSiblings

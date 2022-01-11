@@ -14,6 +14,7 @@
 
 html {
     height: -webkit-fill-available;
+    background-color: black;
 }
 
 body {
@@ -36,7 +37,7 @@ main {
 ::-webkit-scrollbar {
     width: 10px;
     height: 0px;
-    overflow:auto;
+    overflow: auto;
     background-color: transparent;
 }
 
@@ -427,4 +428,41 @@ code:not([class]) {
 .article ::selection {
     background-color: black;
     color: white !important;
+}
+
+.addTableModal .modal-body {
+    padding-bottom: 0px;
+}
+
+.addTableModal .modal-footer {
+    padding-top: 0px;
+    border-top: 0px;
+}
+
+.addTableModal button {
+    background-color: transparent;
+    margin: 0px;
+    padding: 0px;
+    border: 0px;
+}
+
+.addTableModal .ignore {
+    color: #999;
+}
+
+.addTableModal .confirm {
+    color: #eee;
+}
+
+.addTableModal input[type="number"]::-webkit-outer-spin-button,
+.addTableModal input[type="number"]::-webkit-inner-spin-button {
+    display: none;
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.addTableModal button {
+    border: 0px !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
 }

@@ -322,3 +322,21 @@ body.dark {
     min-width: 0px !important;
     overflow-y: hidden;
 }
+
+.dark .addTableModal .modal-content {
+    background-color: #333;
+    color: white;
+}
+
+.dark .addTableModal .modal-content input {
+    background-color: transparent;
+    color: #eee;
+}
+
+.dark .addTableModal .ignore {
+    color: #888;
+}
+
+.dark .addTableModal .confirm {
+    color: #ccc;
+}

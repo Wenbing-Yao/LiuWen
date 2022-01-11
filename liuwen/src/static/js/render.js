@@ -185,11 +185,20 @@ $(() => {
         }
     });
 
-    $("body").on('DOMSubtreeModified', "#nav-issued-panels .issued-article-detail", (event) => {
-        if (!changedBuffer[event.currentTarget.id]) {
-            changedBuffer[event.currentTarget.id] = true
+    $("body").on('DOMSubtreeModified', "#nav-issued-panels", (event) => {
+        var eleId = event.currentTarget.getAttribute('id')
+
+        if (!changedBuffer[eleId]) {
+            changedBuffer[eleId] = true
         }
     });
+
+    $("body").on('click', "#insert-add-table-button", (event) => {
+        event.preventDefault()
+        let row = parseInt(document.getElementById("insertTableRow").value)
+        let col = parseInt(document.getElementById("insertTableCol").value)
+        window.article.articleInsertTable(row, col)
+    })
 
     $("body").on("click", ".article-delete", (event) => {
         event.preventDefault()

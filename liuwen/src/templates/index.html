@@ -4,23 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>流文</title>
+    <title>{{"LiuWen"|trans}}</title>
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
-    <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../node_modules/highlight.js/styles/monokai.css">
-    <link rel="stylesheet" href="static/css/index.css">
-    <link rel="stylesheet" href="static/css/article-themes/dark.css">
-    <script>
-        MathJax = {
-            tex: {
-                inlineMath: [
-                    ['$', '$'],
-                    ['\\(', '\\)']
-                ]
-            }
-        };
-    </script>
-    <script type="text/javascript" src="static/jslibs/mathjax/tex-mml-chtml.js"></script>
+    <link rel="stylesheet" href="{{ project_root }}/node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ project_root }}/node_modules/highlight.js/styles/monokai.css">
+    <link rel="stylesheet" href="{{ project_root }}/src/static/css/index.css">
+    <link rel="stylesheet" href="{{ project_root }}/src/static/css/article-themes/dark.css">
 </head>
 
 <body class="dark">
@@ -38,16 +27,16 @@
                 <nav id="id-main-nav-div" class="d-flex flex-column text-white bg-dark" style="width: 51px;">
                     <ul class="flex-column mb-auto ps-0 index-nav nav nav-tabs" role="tablist">
                         <li class="text-center nav-item index-nav-tab">
-                            <a class="p-3 w-100" id="nav-issued-tab" data-bs-target="#nav-issued-panel" type="button" role="tab" aria-controls="nav-issued-panel" aria-selected="false" data-bs-toggle="tab">已发布</a>
+                            <a class="p-3 w-100" id="nav-issued-tab" data-bs-target="#nav-issued-panel" type="button" role="tab" aria-controls="nav-issued-panel" aria-selected="false" data-bs-toggle="tab">{{"Issued"|trans}}</a>
                         </li>
                         <li class="text-center nav-item index-nav-tab">
-                            <a class="p-3 w-100 active" id="nav-editing-tab" data-bs-target="#nav-editing-panel-div" type="button" role="tab" aria-controls="nav-editing-panel" aria-selected="true" data-bs-toggle="tab">编辑中</a>
+                            <a class="p-3 w-100 active" id="nav-editing-tab" data-bs-target="#nav-editing-panel-div" type="button" role="tab" aria-controls="nav-editing-panel" aria-selected="true" data-bs-toggle="tab">{{"Editing"|trans}}</a>
                         </li>
                     </ul>
                     <hr>
                     <div class="flex-column pb-3 text-center">
                         <div class="w-100">
-                            <div id="profile-box" login="false"><a id="profile">登录</a></div>
+                            <div id="profile-box" login="false"><a id="profile">{{ "Login" | trans }}</a></div>
                             <div id="username-box" hidden>
                                 <a id="usernameShown"></a>
                             </div>
@@ -77,12 +66,45 @@
                 </div>
             </div>
         </main>
+        <div class="modal fade addTableModal" id="addTableModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col d-flex">
+                                <input id="insertTableRow" type="number" class="form-control shadow-none" placeholder="行" aria-label="行" min="1" value="1">
+                            </div>
+                            <div class="col">
+                                <input id="insertTableCol" type="number" class="form-control shadow-none" placeholder="列" aria-label="列" min="1" value="1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn ignore mt-2" data-bs-dismiss="modal">{{"Cancel"|trans}}</button>
+                        <button id="insert-add-table-button" type="button" class="btn confirm ms-3 mt-2 me-1">{{"Confirm"|trans}}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <footer></footer>
+
     </div>
-    <script src="../node_modules/jquery/dist/jquery.min.js"></script>
-    <script src="../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="static/jslibs/highlight.min.js"></script>
-    <script src="static/js/render.js"></script>
+
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [
+                    ['$', '$'],
+                    ['\\(', '\\)']
+                ]
+            }
+        };
+    </script>
+    <script type="text/javascript" src="{{ project_root }}/src/static/jslibs/mathjax/tex-mml-chtml.js"></script>
+    <script src="{{ project_root }}/node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="{{ project_root }}/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ project_root }}/src/static/jslibs/highlight.min.js"></script>
+    <script src="{{ project_root }}/src/static/js/render.js"></script>
     <script>
         hljs.highlightAll();
     </script>

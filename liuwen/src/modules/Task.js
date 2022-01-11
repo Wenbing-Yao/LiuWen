@@ -7,7 +7,7 @@ class ArticleStateSync {
         this.checkStatus = checkStatus
         this.nChecks = 0
         this.lastRun = null
-        this.Interval = 1 * 1000 // ms
+        this.Interval = 600 * 1000 // ms
         this.Name = 'Article Status Sync'
     }
 

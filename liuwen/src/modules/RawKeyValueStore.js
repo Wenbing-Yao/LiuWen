@@ -1,18 +1,17 @@
 const { safeStorage } = require('electron')
-const { UserDirConfig } = require('./config')
+const { defaultUser, UserDirConfig } = require('./config')
 const path = require('path')
 const { readFileSync, writeFileSync } = require('fs')
 
 
-
-function storeKeyValue(key, value, username) {
+function storeKeyValue(key, value, username = defaultUser) {
     var dc = new UserDirConfig(username)
     const dirBase = dc.keyValueStoreDir()
     var fpath = path.join(dirBase, key)
     writeFileSync(fpath, safeStorage.encryptString(value))
 }
 
-function getKeyValue(key, username) {
+function getKeyValue(key, username = defaultUser) {
     var dc = new UserDirConfig(username)
     const dirBase = dc.keyValueStoreDir()
     var fpath = path.join(dirBase, key)
@@ -27,11 +26,11 @@ function getKeyValue(key, username) {
     }
 }
 
-function storeKeyJson(key, json, username) {
+function storeKeyJson(key, json, username = defaultUser) {
     storeKeyValue(key, JSON.stringify(json), username)
 }
 
-function getKeyJson(key, username) {
+function getKeyJson(key, username = defaultUser) {
     try {
         var json = getKeyValue(key, username)
         if (json) {

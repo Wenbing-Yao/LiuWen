@@ -2,7 +2,7 @@
     {% for art in articles %} {% include 'editing-tab-item.html' %} {% endfor %}
     <li class="list-group-item article-list-item d-flex align-items-center justify-content-center nav-item p-0">
         <a class="d-flex w-100 p-2 issued-detail-tab" id="editing-detail-tab-add" data-bs-target="#issued-detail-panel-add" type="button" role="tab" aria-controls="issued-detail-panel-add" aria-selected="false" data-bs-toggle="tab" editor-boxid="md-editor-for-article-add">
-            <div class="article-title w-100">添加新的文章</div>
+            <div class="article-title w-100">{{"Add New Articles"|trans}}</div>
         </a>
     </li>
 </ul>

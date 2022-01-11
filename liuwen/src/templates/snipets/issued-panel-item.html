@@ -13,7 +13,7 @@
                     <div class="w-100">{{ art.lastUpdate }}</div>
                     <hr class="mb-5"> {% if art.desc %}
                     <div class="specbox specbox-art-desc p-3">
-                        <strong>简介：</strong> {{ art.desc }}
+                        <strong>{{"Introduction"|trans}}: </strong> {{ art.desc }}
                     </div>
                     {% endif %}
                     <div class="content">{{ art.content | safe }}</div>

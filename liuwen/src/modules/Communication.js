@@ -1,13 +1,13 @@
-const { net, session, safeStorage } = require('electron')
 const { createReadStream } = require('fs')
 const fetch = require('node-fetch');
 const FormData = require('form-data');
 
 const { storeKeyJson, getKeyJson } = require('./RawKeyValueStore')
 const { settingStorage } = require('./UserSettings')
-const { URLS } = require('./config')
+const { isDev, URLS } = require('./config')
 
-const baseUrl = URLS.domain
+const baseUrl = isDev ? URLS['dev-domain'] : URLS.domain
+console.log(baseUrl)
 const Paths = {
     'login': 'accounts/login/',
     'checkLogin': 'accounts/amilogin/'
@@ -27,7 +27,7 @@ function parseSetCookie(cookieStr) {
     return cookies
 }
 
-String.prototype.format = function () {
+String.prototype.format = function() {
     a = this;
     for (k in arguments[0]) {
         a = a.replace("{" + k + "}", arguments[0][k])
@@ -48,7 +48,7 @@ function buildUrlConfs(appName, urls) {
 }
 
 function camelCase(input) {
-    return input.toLowerCase().replace(/-(.)/g, function (match, group1) {
+    return input.toLowerCase().replace(/-(.)/g, function(match, group1) {
         return group1.toUpperCase();
     });
 }
@@ -61,7 +61,7 @@ class PaperExplainedClient {
         this.domain = URLS.domain
         this.funcs = {}
         this.funcPaths = {}
-        // this.peSession = session.fromPartition(`persist:${webClientSessionName}`)
+            // this.peSession = session.fromPartition(`persist:${webClientSessionName}`)
         this.cs = this.getCookieString()
         if (!this.cs || !this.cs.includes('csrftoken')) {
             this.initCsrftokenString()
@@ -138,7 +138,7 @@ class PaperExplainedClient {
                     try {
                         var json = JSON.parse(txt)
                         info = json["info"]
-                    } catch (err) { }
+                    } catch (err) {}
 
                     if (success) {
                         success(info)
@@ -153,7 +153,7 @@ class PaperExplainedClient {
                     try {
                         var json = JSON.parse(txt)
                         info = json["info"]
-                    } catch (err) { }
+                    } catch (err) {}
 
                     if (error) {
                         error(info)
@@ -268,7 +268,7 @@ class PaperExplainedClient {
                         try {
                             var json = JSON.parse(txt)
                             info = json["info"]
-                        } catch (err) { }
+                        } catch (err) {}
 
                         if (error) {
                             error(info)
