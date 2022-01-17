@@ -1,36 +1,56 @@
 <div class="w-100 p-3">
     <input id="id_article_id" value="{{art.id}}" hidden>
-    <div class="h6">文章信息</div>
+    <div class="h6">{{"Article Information"|trans}}</div>
     <hr>
     <table class="table table-dark table-striped">
         <thead>
             <tr>
-                <th scope="col" style="min-width: 5em;" class="px-2">字段</th>
-                <th scope="col" class="px-2">内容</th>
+                <th scope="col" style="min-width: 5em;" class="px-2">{{"Field"|trans}}</th>
+                <th scope="col" class="px-2">{{"Content"|trans}}</th>
             </tr>
         </thead>
         <tbody>
 
             {% if art.paperId %}
             <tr>
-                <td>论文ID</td>
+                <td>{{"Paper ID"|trans}}</td>
                 <td>{{ art.paperId }}</td>
             </tr>
             {% endif %} {% if art.title %}
             <tr>
-                <td>文章标题</td>
+                <td>{{"Article Title"|trans}}</td>
                 <td>{{ art.title }}</td>
             </tr>
             {% endif %}
             <tr>
-                <td>创建日期</td>
+                <td>{{"Created On"|trans}}</td>
                 <td>{{ art.localCreatedOn }}</td>
             </tr>
+
+            <tr>
+                <td>{{"Delete Local File"|trans}}</td>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="deleteLocalFileCheck">
+                    </div>
+                </td>
+            </tr>
+
+            {% if art.synced %}
+            <tr>
+                <td>{{"Delete Cloud Article"|trans}}</td>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="deleteCloudCheck">
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
 
         </tbody>
     </table>
     <div class="d-flex justify-content-end">
-        <button class="article-delete-cancel button-dark-border-secondary">取消</button>
-        <button class="article-delete-confirm button-dark-border ms-3">删除</button>
+        <button class="article-delete-cancel button-dark-border-secondary">{{"Cancel"|trans}}</button>
+        <button class="article-delete-confirm button-dark-border ms-3">{{"Delete"|trans}}</button>
     </div>
 </div>

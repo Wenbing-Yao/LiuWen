@@ -113,25 +113,9 @@ main {
     text-align: center;
 }
 
-.index-nav-tab:focus,
-.index-nav-tab:hover,
-.index-nav-tab a.active {
-    background-color: #444;
-    color: white;
-}
-
 .article-issued-box,
 .article-editing-box {
     overflow: auto;
-}
-
-.article-list .active {
-    background-color: #444;
-}
-
-.index-tab-view {
-    width: 280px;
-    background-color: #111;
 }
 
 .w-100 {
@@ -213,7 +197,6 @@ main {
     min-width: 360px;
     width: 360px;
     padding: 15px;
-    background-color: #100;
 }
 
 .issued-article-basic>div {
@@ -230,19 +213,14 @@ main {
     max-width: 100%;
 }
 
-.form-control.dark {
-    background-color: black;
-    color: white;
-}
-
 .nomodify {
     border: 1px solid transparent;
-    border-left: 1px solid rgb(0, 165, 0);
+    border-bottom: 1px solid rgb(0, 165, 0);
 }
 
 .modified {
     border: 1px solid transparent;
-    border-left: 1px solid rgb(207, 207, 0);
+    border-bottom: 1px solid rgb(207, 207, 0);
 }
 
 .save-article-basic {
@@ -465,4 +443,34 @@ code:not([class]) {
     border: 0px !important;
     box-shadow: none !important;
     text-shadow: none !important;
+}
+
+.liuwen nav .nav-tabs {
+    border-bottom: 0px;
+}
+
+.index-nav-tab a.active {
+    color: #000;
+}
+
+.artinput.form-control {
+    font-size: 14px;
+    border-radius: 5px;
+}
+
+.editor-head {
+    font-size: 12px;
+    width: 100%;
+}
+
+.editor-head .filename {
+    padding: 10px 10px;
+}
+
+.editor-head .status {
+    font-size: 14px;
+}
+
+.liuwen .nav-tabs {
+    border-bottom: 0px;
 }

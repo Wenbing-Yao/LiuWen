@@ -238,20 +238,43 @@ function insertLink(editor, type) {
 
 function insertFootnote(editor, type) {}
 
-function insertImage(editor, type) {
+function setPostionAtStart(editor, x, y) {
+    if (!editor) {
+        return
+    }
+
+    editor.focus()
+    let editorPoint = editor.getTargetAtClientPoint(x, y)
+
+    if (!editorPoint) {
+        return
+    }
+
+    editor.setPosition(new monaco.Position(
+        editorPoint.position.lineNumber, 1
+    ))
+}
+
+function dropImageAt(editor, fpath, x, y) {
+    editor.focus()
+    insertImage(editor, null, fpath, true)
+}
+
+function insertImage(editor, type, fpath = "", newLine = false) {
     var selection = editor.getSelection();
     // TODO: Add indication
     if (selection.startLineNumber != selection.endLineNumber) return
 
     // No selection
     if (selection.startColumn == selection.endColumn) {
+        let lineSep = newLine ? "\n" : ""
         editor.executeEdits("", [{
             range: new monaco.Range(
                 selection.startLineNumber,
                 selection.startColumn,
                 selection.startLineNumber,
                 selection.startColumn),
-            text: "![](){}"
+            text: `![](${fpath}){style="max-width:500px;"}${lineSep}`
         }])
         editor.setPosition(new monaco.Position(selection.startLineNumber, selection.startColumn + 2))
         return
@@ -273,7 +296,7 @@ function insertImage(editor, type) {
             selection.startLineNumber,
             selection.endColumn + 2
         ),
-        text: `]( "${selectedText}"){}`
+        text: `]( "${selectedText}"){style="max-width:500px;"}`
     }])
     editor.setPosition(
         new monaco.Position(
@@ -286,9 +309,6 @@ function insertToMarkdownEditor(editor, type) {
         console.log(`No editor found for type ${type}`)
         return
     }
-
-    // console.log(editor, editor.getPosition())
-    // console.log(`insert to editor: ${type}`)
 
     let callfunc = null;
     switch (type) {
@@ -406,7 +426,9 @@ function formatText(editor, type) {
 }
 
 module.exports = {
+    dropImageAt,
     insertTableDetail,
     insertToMarkdownEditor,
-    formatText
+    formatText,
+    setPostionAtStart
 }

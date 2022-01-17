@@ -1,5 +1,5 @@
 const { dirConfig, version, UserDirConfig } = require('./config');
-const { writeFileSync, readFile, readFileSync, rm, accessSync, constants } = require('fs');
+const { writeFileSync, readFile, readFileSync, rm, accessSync, constants, writeFile } = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
@@ -51,6 +51,7 @@ class ArticleStorage {
         this.username = username
         this.dirConfig = new UserDirConfig(username)
         this.articleDataDir = this.dirConfig.articleDir()
+        this.markdownDataDir = this.dirConfig.markdownDir()
         this.articleConfigPath = this.dirConfig.articleConfigPath()
         this.articleReverseFinderPath = this.dirConfig.articlePathReverseFinderPath()
     }
@@ -66,6 +67,8 @@ class ArticleStorage {
             if (reverseDict[fpath]) {
                 delete reverseDict[fpath]
                 writeFileSync(this.articleReverseFinderPath, JSON.stringify(reverseDict))
+            } else {
+                console.log('fpath not found: ', fpath)
             }
             return
         } catch (err) {
@@ -148,8 +151,9 @@ class ArticleStorage {
             if (data['articles'][id] == undefined) {
                 return
             }
-            this.deleteReversePath(data['articles'][id].fpath)
+
             delete data['articles'][id]
+
             writeFileSync(this.articleConfigPath, JSON.stringify(data))
         })
     }
@@ -217,6 +221,7 @@ class ArticleStorage {
     }
 
     updateArticleInfo(fpath, info) {
+        info = this.purifyArtInfo(info)
         this.updateJsonFile(fpath, info)
     }
 
@@ -244,18 +249,32 @@ class ArticleStorage {
         info: 文章信息
         type: ISSUED/EDITING
     */
-    createArticle(info) {
+    createArticle(info, syncCloud = false) {
         var meta = {};
         var localId = this.genNewArticleId();
+        info = this.purifyArtInfo(info)
         info['id'] = localId;
 
         // add default value
+        if (!info.contributed) {
+            info.contributed = false
+        }
+
+        if (!info.synced) {
+            info.synced = false
+        }
+
         if (!info.status) {
             info.status = '尚未同步'
         }
 
-        info.contributed = false
-        info.synced = false
+        if (syncCloud) {
+            if (info.status != '正在编辑' && syncCloud) {
+                info.contributed = true
+            }
+            info.synced = true
+        }
+
         var ofname = path.join(this.articleDataDir, `${localId}.json`);
         writeFileSync(ofname, JSON.stringify(info));
         meta['id'] = localId
@@ -267,22 +286,88 @@ class ArticleStorage {
         return localId;
     }
 
-    deleteArticle(id) {
+    /*
+    参数：
+        info: 文章信息 {
+            article_id: 12,
+            desc: "",
+            title: "",
+            slug: "",
+            status: "",
+            tags: "",
+            markdown_content: "",
+            paper_id: "",
+            paper_title: "",
+            url: ""
+        }
+    */
+    syncCloudArticle(info, success) {
+        let mdDir = this.dirConfig.markdownArticleDir(info.slug)
+        let mdFpath = path.join(mdDir, 'main.md')
+        writeFile(mdFpath, info.markdown_content, 'utf8', (err) => {
+            if (err) {
+                console.log(`sync cloud article to local failed, error: ${err}`)
+                return
+            }
+
+            var articleInfo = {}
+            articleInfo.filePath = mdFpath
+
+            if (info.paper_title) {
+                articleInfo.title = info.title
+                articleInfo.paperTitle = info.paper_title
+                articleInfo.paperId = info.paper_id
+            } else {
+                articleInfo.title = info.title
+            }
+
+            articleInfo.desc = info.desc
+            articleInfo.tags = info.tags.split(",")
+            articleInfo.url = info.url
+            articleInfo.cloudId = info.article_id
+            articleInfo.slug = info.slug
+            articleInfo.synced = true
+            articleInfo.status = info.status
+
+            let localId = this.createArticle(articleInfo, true)
+            success(localId)
+        })
+    }
+
+    cloudArticleImageDir(info) {
+        let imageDir = this.dirConfig.markdownArticleImageDir(info.slug)
+        return imageDir
+    }
+
+    deleteArticle(id, deleteLocal = false) {
         var meta = this.getArticleMeta(id)
         if (!meta) {
             return
         }
+        let art = this.getArticle(id)
+        let filePath = art.filePath
+
+        if (deleteLocal && filePath) {
+            rm(filePath, (err) => {
+                if (err) {
+                    console.log("Local file delete failed:", err, ` local id: ${id}`)
+                } else {
+                    console.log(`Local file deleted, local id: ${id}`)
+                }
+            })
+        }
         rm(meta.fpath, (err) => {
             if (err) {
-                console.log('删除文件出错，元信息：', meta)
-                console.log(`删除文件出错：${err}`)
+                console.log('删除文件出错，元信息：', meta, "错误:", err)
             }
         })
         this.deleteArticleMeta(id)
+        this.deleteReversePath(filePath)
     }
 
     updateArticle(id, info) {
         var fpath = this.getArticleMetaContentPath(id)
+        info = this.purifyArtInfo(info)
         if (!fpath) {
             console.log(`文件不存在：${fpath}`)
             return
@@ -290,6 +375,7 @@ class ArticleStorage {
         if (info.synced && !info.contributed && !info.issued) {
             info.status = '已同步'
         }
+
         info.lastSync = Date.now()
         info['lastUpdate'] = Date.now()
         this.updateArticleInfo(fpath, info)
@@ -342,7 +428,35 @@ class ArticleStorage {
             }
             info.tags = ts
         }
+
+        info = this.purifyArtInfo(info)
         return info
+    }
+
+    purifyArtInfo(info) {
+        if (info.filePath) {
+            info.filePath = info.filePath.trim()
+        }
+
+        if (info.status == '已拒绝') {
+            info.contributed = false
+        } else if (info.status == '已通过') {
+            info.contributed = true
+        }
+
+        return info
+    }
+
+    listEditingArticleCloudIds() {
+        let editing = []
+
+        for (const [_, art] of Object.entries(this.listEditingArticle())) {
+            if (art.cloudId) {
+                editing.push(art.cloudId)
+            }
+        }
+
+        return editing
     }
 
     listEditingArticle() {

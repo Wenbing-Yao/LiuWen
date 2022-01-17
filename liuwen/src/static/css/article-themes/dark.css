@@ -252,6 +252,31 @@ h1.article-title {
     color: #634bd8;
 }
 
+.dark .index-nav-tab:focus,
+.dark .index-nav-tab:hover,
+.dark .index-nav-tab a.active {
+    background-color: #444;
+    color: white;
+}
+
+.dark .article-list .active {
+    background-color: #444;
+}
+
+.dark .index-tab-view {
+    width: 280px;
+    background-color: #111;
+}
+
+.dark .article-list-item {
+    background-color: #111;
+    color: #ddd;
+}
+
+.dark .issued-article-basic {
+    background-color: #111;
+}
+
 body.dark {
     background-color: rgb(54, 59, 64);
     color: #dedede;
@@ -339,4 +364,62 @@ body.dark {
 
 .dark .addTableModal .confirm {
     color: #ccc;
+}
+
+.dark .tooltip-inner {
+    background-color: #555;
+    color: #fff;
+}
+
+.dark .index-nav-tab a.active {
+    color: white;
+}
+
+.dark .artinput.form-control {
+    border-color: #222;
+    background-color: #222;
+}
+
+.dark .artinput.form-control:disabled {
+    background-color: #333;
+    color: #aaa;
+}
+
+.dark .artinput.form-control:focus {
+    border-color: #336388;
+}
+
+.dark .artinput-tips {
+    color: #aaa;
+    font-size: 12px;
+}
+
+.dark .form-control {
+    background-color: black;
+    color: #ccc;
+}
+
+.dark .form-control.dark {
+    background-color: black !important;
+    color: #ccc !important;
+}
+
+.dark .editor-head {
+    background-color: #222;
+}
+
+.dark .editor-head .filename {
+    background-color: #333;
+}
+
+.dark .editor-head .btn.syn-to-cloud,
+.dark .editor-head .btn.article-issue {
+    color: #ccc;
+    box-shadow: none;
+    padding: 6px 6px 6px 6px;
+}
+
+.dark .editor-head .btn.syn-to-cloud:hover,
+.dark .editor-head .btn.article-issue:hover {
+    color: #fff;
 }

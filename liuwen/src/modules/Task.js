@@ -1,13 +1,17 @@
+const { isDev } = require('./render/utils')
+const DEV_DEFAULT_INTERVAL = 1
+
 class ArticleStateSync {
 
     constructor(localId, callback, checkStatus = null, cloudId = null) {
+        const DEFAULT_INTERVAL = 600
         this.localId = localId
         this.cloudId = cloudId
         this.callback = callback
         this.checkStatus = checkStatus
         this.nChecks = 0
         this.lastRun = null
-        this.Interval = 600 * 1000 // ms
+        this.Interval = 1000 * (isDev ? DEV_DEFAULT_INTERVAL : DEFAULT_INTERVAL)
         this.Name = 'Article Status Sync'
     }
 

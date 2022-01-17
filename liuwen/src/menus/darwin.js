@@ -27,7 +27,44 @@ const menuTemplate = [{
             {
                 label: _('Sync To Local'),
                 click: syncToLocal,
-                enabled: false
+                accelerator: 'Cmd+Shift+s'
+            }
+        ]
+    },
+    {
+        // undo, redo, cut, copy, paste
+        label: _("Edit"),
+        submenu: [{
+                label: _('Undo'),
+                role: 'undo',
+                accelerator: 'Cmd+z'
+            },
+            {
+                label: _('Redo'),
+                role: 'redo',
+                accelerator: 'Cmd+Shift+z'
+            },
+            { type: 'separator' },
+            {
+                label: _('Copy'),
+                role: 'copy',
+                accelerator: 'Cmd+c'
+            },
+            {
+                label: _('Paste'),
+                role: 'paste',
+                accelerator: 'Cmd+v'
+            },
+            {
+                label: _('Cut'),
+                role: 'cut',
+                accelerator: 'Cmd+x'
+            },
+            { type: 'separator' },
+            {
+                label: _('SelectAll'),
+                role: 'selectAll',
+                accelerator: 'Cmd+a'
             }
         ]
     },

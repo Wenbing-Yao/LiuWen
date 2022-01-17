@@ -1,4 +1,5 @@
-const { createReadStream } = require('fs')
+const path = require('path')
+const { createReadStream, createWriteStream } = require('fs')
 const fetch = require('node-fetch');
 const FormData = require('form-data');
 
@@ -7,7 +8,7 @@ const { settingStorage } = require('./UserSettings')
 const { isDev, URLS } = require('./config')
 
 const baseUrl = isDev ? URLS['dev-domain'] : URLS.domain
-console.log(baseUrl)
+
 const Paths = {
     'login': 'accounts/login/',
     'checkLogin': 'accounts/amilogin/'
@@ -108,10 +109,31 @@ class PaperExplainedClient {
     }
 
     get(fname, success, error, urlParams) {
+        if (!error) {
+            error = err => console.log(`Get error: ${err}`)
+        }
+
+        if (!this[fname]) {
+            error(`Get function not found: ${fname}`)
+            return
+        }
+
         return this[fname](fname, success, error, urlParams)
     }
 
     post(fname, data, files, success, error, urlParams) {
+
+        if (!error) {
+            error = err => {
+                console.log(`post error: ${err}`)
+            }
+
+        }
+
+        if (!this[fname]) {
+            error(`Post function not found: ${fname}`)
+            return
+        }
         return this[fname](fname, data, files, success, error, urlParams)
     }
 
@@ -121,6 +143,47 @@ class PaperExplainedClient {
             var cookiesJson = this.setCookie(res.headers.raw()['set-cookie'])
             this.cs = this.getCookieString(cookiesJson)
         })
+    }
+
+    extractFilename(url) {
+        let pathname = null
+        try {
+            let u = new URL(url)
+            pathname = u.pathname
+        } catch (err) {
+            console.log(`Not valid url: ${url}`)
+            pathname = url
+        }
+        return path.basename(pathname)
+    }
+
+    download(url, directory, success, error) {
+        let fname = this.extractFilename(url)
+
+        console.log(`download url: ${url}`)
+
+        return fetch(url).then(response => new Promise((resolve, reject) => {
+            if (!response.ok) {
+                console.log(`Url "${url}" download failed!`)
+                return reject(null)
+            }
+
+            let fpath = path.join(directory, fname)
+            let fstream = createWriteStream(fpath)
+            response.body.pipe(fstream)
+            fstream.on('close', () => {
+                if (success) {
+                    resolve(success(fname))
+                }
+                resolve(fpath)
+            })
+            fstream.on("error", () => {
+                if (error) {
+                    error()
+                }
+                reject(null)
+            })
+        }))
     }
 
     ajaxGet(path, success, error) {

@@ -6,9 +6,16 @@ const amdLoader = require('monaco-editor/min/vs/loader.js');
 const amdRequire = amdLoader.require;
 // const morphdom = require('morphdom');
 const { ArticleStateSync } = require('./modules/Task')
-const { formatText, insertTableDetail, insertToMarkdownEditor } = require('./modules/MarkdownInsertHandler')
+const {
+    formatText,
+    insertTableDetail,
+    insertToMarkdownEditor,
+    setPostionAtStart,
+    dropImageAt
+} = require('./modules/MarkdownInsertHandler')
+const { filename } = require('./modules/render/utils')
 const { trans, setLocaleLang, addSupportedLanguage, getLanguage } = require('./locale/i18n');
-const { readFileSync, lstatSync } = require('fs');
+const { readFileSync } = require('fs');
 const _ = trans
 
 
@@ -39,6 +46,35 @@ const ElementInfo = {
     NavEditingTab: "nav-editing-tab"
 }
 
+function setModify(mdbox, modified) {
+    if (!mdbox) {
+        return
+    }
+
+    var ele = document.getElementById(mdbox.getAttribute('modify-indicator'))
+    if (!ele) {
+        return
+    }
+
+    if (modified) {
+        if (ele.classList.contains('nomodify')) {
+            ele.classList.remove('nomodify')
+        }
+
+        if (!ele.classList.contains('modified')) {
+            ele.classList.add('modified')
+        }
+    } else {
+        if (ele.classList.contains('modified')) {
+            ele.classList.remove('modified')
+        }
+
+        if (!ele.classList.contains('nomodify')) {
+            ele.classList.add('nomodify')
+        }
+    }
+}
+
 function setEditorEditing(articleId) {
     if (articleId) {
         var boxid = articleBoxids.get(articleId)
@@ -50,13 +86,7 @@ function setEditorEditing(articleId) {
     var mdbox = document.getElementById(boxid)
     if (!mdbox) return
 
-    if (mdbox.classList.contains('nomodify')) {
-        mdbox.classList.remove('nomodify')
-    }
-
-    if (!mdbox.classList.contains('modified')) {
-        mdbox.classList.add('modified')
-    }
+    setModify(mdbox, true)
 }
 
 function setEditorSaved(articleId) {
@@ -66,12 +96,7 @@ function setEditorSaved(articleId) {
     var mdbox = document.getElementById(boxid)
     if (!mdbox) return
 
-    if (mdbox.classList.contains('modified')) {
-        mdbox.classList.remove('modified')
-    }
-    if (!mdbox.classList.contains('nomodify')) {
-        mdbox.classList.add('nomodify')
-    }
+    setModify(mdbox, false)
 }
 
 function registerArticleSyncTask(localId) {
@@ -234,7 +259,7 @@ function initMarkdownEditor(boxid, articleId) {
         return
     }
 
-    amdRequire(['vs/editor/editor.main'], async function () {
+    amdRequire(['vs/editor/editor.main'], async function() {
         monaco.editor.defineTheme('default-theme', {
             base: 'vs-dark',
             inherit: true,
@@ -280,26 +305,11 @@ function initMarkdownEditor(boxid, articleId) {
             articleEditors.set(CreationArtId, editor)
         }
 
-        editor.onKeyUp((event) => {
-            // var htmlView = document.getElementById(renderedId);
-            // if (!htmlView) {
-            //     console.log('No htmlview')
-            //     return
-            // }
-            // var md = new Markdown()
-            // var notoc = true
-            // htmlView.innerHTML = md.convert(editor.getValue(), notoc);
-        });
         editor.getModel().onDidChangeContent((event) => {
             setEditorEditing(articleId)
         })
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S, () => {
-            if (mdbox.classList.contains('modified')) {
-                mdbox.classList.remove('modified')
-            }
-            if (!mdbox.classList.contains('nomodify')) {
-                mdbox.classList.add('nomodify')
-            }
+            setModify(mdbox, false)
 
             if (!articleId) {
                 var art = new ArticleInfoFetcher(null)
@@ -308,6 +318,7 @@ function initMarkdownEditor(boxid, articleId) {
                     editor.getValue(), // markdown text
                     art.fetchArticleInfo()
                 )
+                return
             } else {
                 var art = new ArticleInfoFetcher(articleId)
                 ipcRenderer.send(
@@ -327,7 +338,13 @@ function initMarkdownEditor(boxid, articleId) {
                 console.log('No htmlview')
                 return
             }
-            var md = new Markdown()
+            var sfpath = htmlView.getAttribute('sfpath')
+            var md = null
+            if (sfpath) {
+                md = new Markdown(path.dirname(sfpath))
+            } else {
+                md = new Markdown()
+            }
             var notoc = true
             var newEle = document.createElement('div')
             var innerHtml = md.convert(editor.getValue(), notoc, true)
@@ -349,7 +366,6 @@ function initMarkdownEditor(boxid, articleId) {
         })
     });
 }
-
 
 function compareWithSoup(renderedId, preEl, newEl) {
     var preOrigin = htmlOriginBuf.get(renderedId)
@@ -443,9 +459,9 @@ contextBridge.exposeInMainWorld('testString', {
 function getTemplateEnv() {
     let env = configure(path.join(__dirname, 'templates'))
     env.addFilter('trans', trans)
+    env.addFilter('filename', filename)
     return env
 }
-
 
 function renderIssued(articles) {
 
@@ -498,7 +514,8 @@ function renderEditing(articles) {
     })
 
     for (let art of articles) {
-        if (art.cloudId) registerArticleSyncTask(art.id)
+        // todo: only contributed
+        if (art.cloudId && art.contributed) registerArticleSyncTask(art.id)
     }
 }
 
@@ -553,7 +570,7 @@ function addNewEditingPanel(article, show = false) {
 
 function addIssuedArticlePanel(article, show = false) {
     let env = getTemplateEnv()
-    var md = new Markdown(article.mdFpath ? path.dirname(article.mdFpath) : null)
+    var md = new Markdown(article.filePath ? path.dirname(article.filePath) : null)
     var notoc = true
     article.content = md.convert(article.mdContent, notoc, true)
 
@@ -653,6 +670,10 @@ ipcRenderer.on('article:format', (event, type) => {
     formatText(editor, type)
 })
 
+ipcRenderer.on('article:sync-to-local-reply', (event, article) => {
+    addEditingToNew(article)
+})
+
 ipcRenderer.on('article:create-reply', (event, article) => {
     addEditingToNew(article, true)
 
@@ -672,7 +693,7 @@ ipcRenderer.on('article:show-rendered', (event, article) => {
         return
     }
 
-    console.log(`元素未找到！ 文章ID为: ${article.id}`)
+    console.log(_("Element id not found, the article id is") + `: ${article.id}`)
 })
 
 function createArticle() {
@@ -776,6 +797,89 @@ function articleInsertTable(row, col) {
     var editor = getActiveEditor()
     insertTableDetail(editor, row, col)
 }
+
+function showArticleInfo(localId, info) {
+    var infoEle = document.getElementById(`${ArticleInfoBoxPrefix}${localId}`)
+    if (!info) {
+        infoEle.innerHTML = ""
+        return
+    }
+
+    let env = getTemplateEnv()
+    env.render(TEMPLATES_CONFIG['article-info-box'], { infos: [info] },
+        (err, res) => {
+            if (err) console.error(err)
+            infoEle.innerHTML = res
+        })
+}
+
+function articleMetaChange(localId, fieldType, value) {
+    let info = {}
+    const N_MAX_TAGS = 5
+    info[fieldType] = value
+    ipcRenderer.send(
+        'article:meta-update',
+        localId, info
+    )
+
+    if (fieldType == 'title' && value) {
+        var titleEle = document.getElementById(`${TitleSelectorPrefix}${localId}`)
+        titleEle.innerText = value
+        return
+    }
+
+    if (fieldType == 'tags') {
+        if (value == "") {
+            // show error info, tags can not be empty
+            showArticleInfo(localId, _("Tags field is required!"))
+            return
+        } else {
+            let tags = value.split(',')
+            if (tags.length > N_MAX_TAGS) {
+                // show error info: max tag number cannot be larger than ${N_MAX_TAGS}
+                showArticleInfo(localId, _("The number of tags should not be larger than ") + N_MAX_TAGS)
+            } else {
+                showArticleInfo(localId, null)
+            }
+        }
+        return
+    }
+
+    if (fieldType == 'paperId') {
+        if (!value) {
+            return
+        }
+        if (navigator.onLine) {
+            ipcRenderer.send('article:check-paper-id', localId, value)
+        } else {
+            // push event to todo list
+        }
+        return
+    }
+}
+
+ipcRenderer.on('article:check-paper-id-reply', (event, paperId, localId, title) => {
+    let inputEle = document.getElementById(`id-article-${localId}-title`)
+
+    if (!title) {
+        if (inputEle.hasAttribute('disabled')) {
+            console.log('移除 disabled')
+            inputEle.removeAttribute('disabled')
+        }
+        showArticleInfo(localId, _("Paper ID does not exist!"))
+        return
+    }
+
+    // TODO: if title is empty, set the title
+    let titleEle = document.getElementById(`${TitleSelectorPrefix}${localId}`)
+    titleEle.innerText = title
+    inputEle.value = title
+
+    if (!inputEle.hasAttribute('disabled')) {
+        inputEle.setAttribute('disabled', 'disabled')
+    }
+    showArticleInfo(localId, "")
+})
 
 function disableArticleIssuedBtn(articleId, disabled = true) {
     var issueBtn = document.getElementById(`${ElementInfo.ArticleIssuedButton}${articleId}`)
@@ -887,7 +991,8 @@ ipcRenderer.on('article:content-reply', (event, localId, renderedId, content) =>
         return
     }
 
-    var md = new Markdown()
+    var sfpath = htmlView.getAttribute('sfpath')
+    var md = new Markdown(path.dirname(sfpath))
     var notoc = true
     var innerHTML = md.convert(content, notoc, true)
     htmlView.innerHTML = innerHTML
@@ -912,8 +1017,9 @@ ipcRenderer.on('article:content-reply', (event, localId, renderedId, content) =>
 
 ipcRenderer.on('article:render-reply', (event, type, articles) => {
     var articleArray = []
-    var md = new Markdown()
+
     for (let k in articles) {
+        let md = new Markdown(path.dirname(articles[k].filePath))
         articles[k].content = md.convert(articles[k].mdContent, true, true)
         articleArray.push(articles[k])
         if (articles[k].contributed && !articles[k].issued && articles[k].cloudId) {
@@ -935,6 +1041,9 @@ ipcRenderer.on('article:check-status-changed', (event, localId, status) => {
         removeEditingElement(localId)
     } else {
         ele.innerText = status
+        if (status == '已拒绝') {
+            disableArticleIssuedBtn(localId, false)
+        }
     }
 })
 
@@ -952,7 +1061,7 @@ ipcRenderer.on('article:show-markdown-help', (event) => {
         title: _('Markdown Help'),
         tags: [_('Markdown Help')],
         mdContent: mdContent,
-        mdFpath: fpath
+        filePath: fpath
     }
     console.log(`add command line help for lang: ${lang}`)
     addIssuedArticle(article, true)
@@ -963,8 +1072,8 @@ function openExternalLink(link) {
 }
 
 function setWinLogin(username) {
-    var ele = document.getElementById("usernameShown")
-    ele.innerText = username
+    // var ele = document.getElementById("usernameShown")
+    // ele.innerText = username
 
     var usernameBox = document.getElementById("username-box")
     usernameBox.hidden = false
@@ -975,8 +1084,8 @@ function setWinLogin(username) {
 }
 
 function setWinLogout() {
-    var ele = document.getElementById("usernameShown")
-    ele.innerText = ""
+    // var ele = document.getElementById("usernameShown")
+    // ele.innerText = ""
 
     var usernameBox = document.getElementById("username-box")
     usernameBox.hidden = true
@@ -1017,8 +1126,31 @@ ipcRenderer.on('article:element-delete', (event, articleId) => {
     removeEditingElement(articleId)
 })
 
-function fileDropped(fpath) {
-    ipcRenderer.send('article:file-dropped', fpath)
+function fileDropped(fpath, clientX, clientY) {
+    const SUPPORTED_IMAGE_EXTS = [
+        '.png', '.jpg', '.apng', '.gif', '.ico', '.cur',
+        '.jpg', '.jpeg', '.jfif', '.pjpeg', '.pjp', '.avif',
+        '.svg', '.webp'
+    ]
+    if (fpath.endsWith('.md')) {
+        ipcRenderer.send('article:file-dropped', fpath)
+    } else {
+        // insert image
+        let editor = getActiveEditor()
+        if (!editor) {
+            return
+        }
+
+        for (let ends of SUPPORTED_IMAGE_EXTS) {
+            if (fpath.endsWith(ends)) {
+                dropImageAt(editor, fpath, clientX, clientY)
+            }
+        }
+    }
+}
+
+function logPosition(x, y) {
+    setPostionAtStart(getActiveEditor(), x, y)
 }
 
 contextBridge.exposeInMainWorld('monaco', {
@@ -1032,7 +1164,9 @@ contextBridge.exposeInMainWorld('article', {
     'updateArticle': updateArticle,
     'articleIssue': articleIssue,
     'articleDelete': articleDelete,
-    'articleInsertTable': articleInsertTable
+    'articleInsertTable': articleInsertTable,
+    'articleMetaChange': articleMetaChange,
+    'logPosition': logPosition
 })
 
 contextBridge.exposeInMainWorld('profile', {

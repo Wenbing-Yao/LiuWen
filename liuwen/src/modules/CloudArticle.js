@@ -1,6 +1,7 @@
 const { accessSync, constants, readFileSync, mkdirSync } = require('fs')
 const md5File = require('md5-file')
 const md5 = require('md5')
+const os = require('os')
 const path = require('path')
 const JSSoup = require('jssoup').default
 
@@ -8,12 +9,16 @@ const { ArticleStorage } = require('./ArticleStorage')
 const { PaperExplainedClient } = require('./Communication')
 const { Markdown } = require('./LiuwenMarkDown')
 const { WORK_BASE } = require('./config')
+const { trans: _ } = require('../locale/i18n')
 
 function fileExists(fpath) {
     try {
-        accessSync(fpath, constants.F_OK)
+        accessSync(fpath.trim(), constants.F_OK)
         return true
-    } catch (err) {}
+    } catch (err) {
+        console.log('file exists error:', fpath)
+        console.log(err)
+    }
     return false
 }
 
@@ -28,7 +33,7 @@ function getStorage(username = null) {
 
 class CloudArticle {
     static APP_NAME = 'articles'
-    static DIR_TITLE = '文章目录'
+    static DIR_TITLE = _('Table of Contents')
 
     constructor(localId, username) {
         this.localId = localId
@@ -40,11 +45,42 @@ class CloudArticle {
 
     md2html(fpath) {
         var raw = readFileSync(fpath)
-        var markdown = new Markdown()
-        return markdown.convert(raw.toString(), false, true)
+        var markdown = new Markdown(path.dirname(fpath))
+        let markdownContent = raw.toString()
+        return {
+            md: markdownContent,
+            html: markdown.convert(markdownContent, false, true)
+        }
     }
 
-    download(url, odir, success, error) {}
+    replaceImageUrls(content, urlMap) {
+        let lines = []
+        let sfpath = urlMap.sfpath
+        const rule = /^!\[([^\]]*)\][\(]([^()\[\]"\t]*(?![ ]))[ \t]*(\"[^\"]*\")?[\)](\{[^\}]*\})?/
+        for (let line of content.split(os.EOL)) {
+            const match = rule.exec(line)
+            if (match) {
+                let source = match[2].trim()
+                let absSource = source
+                if (source.startsWith('.')) {
+                    absSource = path.join(path.dirname(sfpath), source)
+                }
+                if (urlMap[absSource]) {
+                    lines.push(line.replace(source, urlMap[absSource]))
+                } else {
+                    lines.push(line)
+                }
+                continue
+            } else {
+                lines.push(line)
+            }
+        }
+        return lines.join(os.EOL)
+    }
+
+    download(url, odir, success, error) {
+        return this.client.download(url, odir, success, error)
+    }
 
     prepareImage(source, workon, success, error) {
         source = decodeURI(source)
@@ -60,8 +96,12 @@ class CloudArticle {
         } else {
             console.log('文件不存在本地，尝试从网络下载！', fpath)
         }
+        console.log('文件不存在：', source)
+
         return this.download(source, workon, (ofname) => {
             return this.uploadImage(path.join(workon, ofname), true, success, error)
+        }, () => {
+            console.log(`Prepare an image, download failed: ${source}`)
         })
     }
 
@@ -80,7 +120,7 @@ class CloudArticle {
         const hexdigest = md5File.sync(source)
         return this.imageExists(hexdigest, (exists, imageUrl) => {
             if (exists) {
-                // console.info('图片已存在，无需再次上传:', source)
+                console.info('图片已存在，无需再次上传:', source)
                 if (pure) {
                     success(imageUrl)
                 } else {
@@ -92,8 +132,10 @@ class CloudArticle {
             }
         }, error).then(info => {
             if (info.exists) {
+                console.log('image exists: ', info.url)
                 return info.url
             } else {
+                console.log(`Start upload image: ${source}`)
                 return this.client.post('uploadImage', {
                     hexdigest: hexdigest
                 }, {
@@ -126,16 +168,25 @@ class CloudArticle {
         })
     }
 
+    articleDelete(articleId, success, error) {
+        this.client.get('articleDelete', success, error, {
+            article_id: articleId
+        })
+    }
+
     articleTitle(articleId, success, error) {
         this.client.post('articleTitle', { article_id: articleId }, null, success, error)
     }
 
-    uploadAndReplaceImage(html, paperId, rehash, success, error) {
+    uploadAndReplaceImage(html, paperId, rehash, sfpath, success, error) {
         var soup = new JSSoup(html)
         var imgs = soup.findAll('img')
         var imageSources = []
         for (let img of imgs) {
-            imageSources.push(img.attrs.src)
+            if (!img.attrs.src) {
+                continue
+            }
+            imageSources.push(img.attrs.src.trim())
         }
         if (rehash) {
             paperId = md5(paperId)
@@ -145,6 +196,9 @@ class CloudArticle {
 
         var imageUrls = []
         for (let ipath of imageSources) {
+            if (sfpath && ipath.startsWith('.')) {
+                ipath = path.join(path.dirname(sfpath), ipath)
+            }
             imageUrls.push(this.prepareImage(
                 ipath, workon,
                 info => console.log('upload image success:', info),
@@ -153,17 +207,17 @@ class CloudArticle {
 
         Promise.all(imageUrls).then((values) => {
             var urlMap = {}
+            urlMap.sfpath = sfpath
             for (let i in imageSources) {
                 urlMap[imageSources[i]] = values[i]
             }
-            // console.log('The image map is: ', urlMap)
             imgs = soup.findAll('img')
             for (let img of imgs) {
                 if (urlMap[img.attrs.src]) {
                     img.attrs.src = urlMap[img.attrs.src]
                 }
             }
-            return success(soup.toString())
+            return success(soup.toString(), urlMap)
         })
 
     }
@@ -172,19 +226,32 @@ class CloudArticle {
         if (typeof tags != "string") {
             tags = tags.join(',')
         }
+
+        let md = null
+        let html = null
+
         if (fpath.endsWith('md')) {
-            var htmlContent = this.md2html(fpath)
+            var info = this.md2html(fpath)
+            md = info.md
+            html = info.html
         } else {
-            var htmlContent = readFileSync(fpath)
+            html = readFileSync(fpath)
         }
 
-        this.uploadAndReplaceImage(htmlContent, paperId, false, (content) => {
-            this.client.post('paperArticleCreate', {
+        this.uploadAndReplaceImage(html, paperId, false, fpath, (content, urlMap) => {
+            let artInfo = {
                 paper: paperId,
                 tags: tags,
                 desc: desc,
                 content: content
-            }, null, success, error)
+            }
+            if (md) {
+                if (urlMap) {
+                    md = this.replaceImageUrls(md, urlMap)
+                }
+                artInfo.markdown_content = md
+            }
+            this.client.post('paperArticleCreate', artInfo, null, success, error)
         })
     }
 
@@ -193,14 +260,28 @@ class CloudArticle {
     }
 
     updatePaperArticleContent(paperId, articleId, fpath, success, error) {
+
+        let md = null
+        let html = null
+
         if (fpath.endsWith('md')) {
-            var htmlContent = this.md2html(fpath)
+            var info = this.md2html(fpath)
+            md = info.md
+            html = info.html
         } else {
-            var htmlContent = readFileSync(fpath)
+            html = readFileSync(fpath)
         }
 
-        this.uploadAndReplaceImage(htmlContent, paperId, false, (content) => {
-            this.client.post('paperArticleUpdateContent', { content: content },
+        this.uploadAndReplaceImage(html, paperId, false, fpath, (content, urlMap) => {
+            var artInfo = { content: content }
+            if (md) {
+                if (urlMap) {
+                    md = this.replaceImageUrls(md, urlMap)
+                }
+                artInfo.markdown_content = md
+            }
+
+            this.client.post('paperArticleUpdateContent', artInfo,
                 null,
                 success,
                 error, { article_id: articleId })
@@ -208,16 +289,27 @@ class CloudArticle {
     }
 
     updateContent(title, articleId, fpath, success, error, rehash = true) {
+        let md = null
+        let html = null
+
         if (fpath.endsWith('md')) {
-            var htmlContent = this.md2html(fpath)
+            var info = this.md2html(fpath)
+            md = info.md
+            html = info.html
         } else {
-            var htmlContent = readFileSync(fpath)
+            html = readFileSync(fpath)
         }
 
-        console.log(htmlContent)
+        this.uploadAndReplaceImage(html, title, rehash, fpath, (content, urlMap) => {
+            var artInfo = { content: content }
+            if (md) {
+                if (urlMap) {
+                    md = this.replaceImageUrls(md, urlMap)
+                }
+                artInfo.markdown_content = md
+            }
 
-        this.uploadAndReplaceImage(htmlContent, title, rehash, (content) => {
-            this.client.post('paperArticleUpdateContent', { content: content },
+            this.client.post('paperArticleUpdateContent', artInfo,
                 null,
                 success,
                 error, { article_id: articleId })
@@ -247,18 +339,32 @@ class CloudArticle {
         if (typeof tags != "string") {
             tags = tags.join(',')
         }
+
+        let md = null
+        let html = null
+
         if (fpath.endsWith('md')) {
-            var htmlContent = this.md2html(fpath)
+            var info = this.md2html(fpath)
+            md = info.md
+            html = info.html
         } else {
-            var htmlContent = readFileSync(fpath)
+            html = readFileSync(fpath)
         }
-        this.uploadAndReplaceImage(htmlContent, title, true, (content) => {
-            this.client.post('groceryArticleCreate', {
+
+        this.uploadAndReplaceImage(html, title, true, fpath, (content, urlMap) => {
+            var artInfo = {
                 article_title: title,
                 tags: tags,
                 desc: desc,
                 content: content
-            }, null, success, error)
+            }
+            if (md) {
+                if (urlMap) {
+                    md = this.replaceImageUrls(md, urlMap)
+                }
+                artInfo.markdown_content = md
+            }
+            this.client.post('groceryArticleCreate', artInfo, null, success, error)
         })
     }
 
@@ -347,13 +453,13 @@ class CloudArticle {
             this.updateContent(
                 artInfo.title, artInfo.cloudId, artInfo.filePath,
                 info => {
-                    console.log('content updated:', info)
                     this.store.updateArticle(this.localId, {
                         synced: true
                     })
                     if (success) {
                         success(info)
                     }
+                    console.log('content updated!')
                 },
                 err => console.log('update content failed:', err))
 
@@ -375,7 +481,68 @@ class CloudArticle {
             err => console.log('grocery create failed:', err))
     }
 
-    syncAllToLocal() {}
+    prepareCloudImage(markdownContent, baseDir, success) {
+        let markdowner = new Markdown()
+        let html = markdowner.convert(markdownContent)
+        let soup = new JSSoup(html)
+        let imgs = soup.findAll('img')
+        let imageSources = []
+        for (let img of imgs) {
+            if (img.attrs.src) {
+                imageSources.push(img.attrs.src)
+            }
+        }
+
+        if (imageSources.length <= 0) {
+            return success(markdownContent)
+        }
+
+        let imageUrls = []
+        for (let isrc of imageSources) {
+            imageUrls.push(this.download(isrc, baseDir,
+                ofname => {
+                    console.log(`Download ${ofname} successfully!`)
+                    return `./${ofname}`
+                },
+                () => console.log(`Download "${isrc} failed!"`)))
+        }
+
+        return Promise.all(imageUrls).then((values) => {
+            var urlMap = {}
+            for (let i in imageSources) {
+                urlMap[imageSources[i]] = values[i]
+            }
+
+            let md = this.replaceImageUrls(markdownContent, urlMap)
+            success(md)
+            return urlMap
+        })
+    }
+
+    syncAllToLocal(existings, browserWindow) {
+        console.log("existings:", existings, typeof existings, existings.length)
+        this.client.post('articleSync2local', { 'ids': existings }, null,
+            arts => {
+                for (let art of arts) {
+                    // 1. save local storage
+                    this.store.syncCloudArticle(art, (localId) => {
+                        let baseDir = this.store.cloudArticleImageDir(art)
+                        this.prepareCloudImage(art.markdown_content, baseDir, (md) => {
+                            // 1.1 update article content
+                            this.store.updateArticleContent(localId, md)
+
+                            // 2. add renders
+                            let article = this.store.getArticle(localId)
+                            browserWindow.webContents.send('article:sync-to-local-reply', article)
+                        })
+                    })
+                }
+            },
+            err => {
+                console.log(`文章同步失败：`)
+                console.log(err)
+            })
+    }
 }
 
 module.exports = {

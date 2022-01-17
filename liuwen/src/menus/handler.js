@@ -2,6 +2,7 @@ const { dialog } = require('electron')
 const path = require('path')
 const { ArticleStorage } = require('../modules/ArticleStorage')
 const { settingStorage } = require('../modules/UserSettings')
+const { getArticleClient } = require('../modules/backend/utils')
 
 function getStorage(username = null) {
     if (username == null) {
@@ -12,6 +13,10 @@ function getStorage(username = null) {
 }
 
 function addLocalFileToEditor(fpath, browserWindow) {
+    if (!fpath.endsWith('.md')) {
+        console.log(`This is not markdown file, ignore: ${fpath}`)
+        return
+    }
     var store = getStorage()
     var articleInfo = {}
     articleInfo.filePath = fpath
@@ -32,7 +37,6 @@ function addLocalFileToEditor(fpath, browserWindow) {
         localId = null
     }
 
-    console.log(`文章不在编辑器中，现在添加：${fpath}`)
     localId = store.createArticle(articleInfo)
     browserWindow.webContents.send('article:create-reply',
         store.getArticle(localId))
@@ -64,7 +68,11 @@ function openLocalMarkdown(menuItem, browserWindow, event) {
 }
 
 function syncToLocal(menuItem, browserWindow, event) {
-    console.log(menuItem)
+    let store = getStorage()
+    let client = getArticleClient()
+    let editings = store.listEditingArticleCloudIds()
+
+    client.syncAllToLocal(editings.join(','), browserWindow)
 }
 
 function insertMarkdownElement(menuItem, browserWindow, event, type) {

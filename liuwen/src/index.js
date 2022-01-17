@@ -5,8 +5,6 @@ const fs = require('fs')
 
 const { isDev } = require('./modules/config')
 const { ArticleStorage } = require('./modules/ArticleStorage')
-const { CloudArticle } = require('./modules/CloudArticle')
-const { PaperExplainedClient } = require('./modules/Communication.js')
 const { closeArticleDeleteModal, fetchLocalId, openArticleDeleteModal } = require('./modules/Modal')
 const { getKeyValue } = require('./modules/RawKeyValueStore')
 const { settingStorage } = require('./modules/UserSettings')
@@ -24,6 +22,7 @@ function getPeClient(username = null) {
         username = settingStorage.getUsername()
 
     if (!peClient) {
+        const { PaperExplainedClient } = require('./modules/Communication.js')
         peClient = new PaperExplainedClient('articles', username)
     }
     return peClient
@@ -38,6 +37,8 @@ function getStorage(username = null) {
 }
 
 function getArticleClient(localId, username = null) {
+    const { CloudArticle } = require('./modules/CloudArticle')
+
     if (username == null) {
         username = settingStorage.getUsername()
     }
@@ -76,17 +77,42 @@ function buildLocaleIndex(callback) {
     let lang = getLanguage()
     let ofpath = `${project_root}/src/templates/langs/index-${app.getVersion()}-${lang}.html`
 
-    env = configure(__dirname)
+    console.log(`Got language in build index: ${getLanguage()}`)
+    env = configure(path.join(__dirname, 'templates'))
     env.addFilter('trans', trans)
     let index_fpath = path.join(__dirname, './templates/index.html')
     env.render(index_fpath, {
         project_root: "../../.."
     }, (err, res) => {
+        if (err) {
+            console.log('an error happend!')
+            console.log(err)
+            throw err
+        }
         fs.writeFileSync(ofpath, res)
         callback(ofpath)
     })
 
     return ofpath
+}
+
+function getLocaleLanguage() {
+    const LANGUAGE_KEY = 'language'
+    var language = getKeyValue(LANGUAGE_KEY)
+    if (!language) {
+        language = app.getLocale()
+    }
+    return language
+}
+
+function getLocaleSupportedLanguage() {
+    const SUPPORTED_LANGUAGES_KEY = 'supported-languages'
+
+    var supported_languages = getKeyValue(SUPPORTED_LANGUAGES_KEY)
+    if (!supported_languages) {
+        supported_languages = []
+    }
+    return supported_languages
 }
 
 function configureLanguage() {
@@ -106,7 +132,7 @@ function configureLanguage() {
     addSupportedLanguage(supported_languages)
 }
 
-const createWindow = async () => {
+const createWindow = async() => {
     configureLanguage()
 
     if (!mainWindow) {
@@ -142,11 +168,6 @@ const createWindow = async () => {
     menu = Menu.buildFromTemplate(menuTemplate)
 
     Menu.setApplicationMenu(menu)
-    // peClient = new PaperExplainedClient('articles')
-
-    // and load the index.html of the app.
-    // let index_fpath = path.join(__dirname, './templates/index.html')
-    // mainWindow.loadFile(index_fpath)
     buildLocaleIndex((src) => mainWindow.loadFile(src))
 
     // Load theme handler
@@ -166,7 +187,6 @@ const createWindow = async () => {
 
     // Open the DevTools.
     if (isDev) {
-        console.log('这是开发者环境，打开开发者工具。')
         console.log('this is a development environment!', isDev)
         mainWindow.webContents.openDevTools();
     }
@@ -177,7 +197,7 @@ const createWindow = async () => {
         mainWindow.show();
         mainWindow.webContents.send('config:language', getLanguage())
         mainWindow.webContents.send('config:supported-languages', getSupportedLanguages())
-        // getFileFromUser();
+            // getFileFromUser();
     })
 
     app.setAboutPanelOptions({
@@ -279,6 +299,7 @@ function handleFreshArticleMeta(info, localId, event) {
     if (info.status == '已通过') {
         var artInfo = store.getArticle(localId)
         mainWindow.webContents.send('article:add-issued', artInfo)
+        mainWindow.webContents.send('article:element-delete', localId)
     }
 }
 
@@ -294,9 +315,8 @@ ipcMain.on('article:check-issued', (event, localId) => {
     var client = getArticleClient(localId)
     var store = getStorage()
     var preInfo = store.getArticle(localId)
-    console.log(`check issued: ${localId}`)
 
-    if (!preInfo.cloudId) {
+    if (!preInfo || !preInfo.cloudId) {
         console.log(`Article cloud id not set: [${localId}]`)
         return
     }
@@ -305,6 +325,27 @@ ipcMain.on('article:check-issued', (event, localId) => {
         (info) => handleFreshArticleMeta(info, localId, event),
         (err) => console.log('article meta error: ', err),
     )
+})
+
+ipcMain.on('article:check-paper-id', (event, localId, paperId) => {
+    // TODO: verify
+    var client = getArticleClient(localId)
+    let store = getStorage()
+    client.paperTitle(paperId,
+        info => {
+            event.reply('article:check-paper-id-reply', paperId, localId, info.title)
+            store.updateArticle(localId, {
+                'paperTitle': info.title,
+                'paperIdValid': true
+            })
+        },
+        err => {
+            event.reply('article:check-paper-id-reply', paperId, localId, null)
+            store.updateArticle(localId, {
+                'paperTitle': null,
+                'paperIdValid': false
+            })
+        })
 })
 
 ipcMain.on('article:content-init', (event, localId, renderedId) => {
@@ -374,22 +415,28 @@ ipcMain.on('article:modal-delete-close', (event, localId) => {
     closeArticleDeleteModal(localId)
 })
 
-ipcMain.on('article:modal-delete-confirm', (event, localId) => {
-    closeArticleDeleteModal(localId)
-    console.log('confirm article delete: ', localId);
-    // 1. local storage delete
-    var store = getStorage()
-    store.deleteArticle(localId)
+ipcMain.on('article:modal-delete-confirm',
+    (event, localId, deleteCloud, deleteLocal) => {
+        closeArticleDeleteModal(localId)
 
-    // 2. cloud delete
-    // TODO: 
+        // 1. local storage delete
+        var store = getStorage()
+        var art = store.getArticle(localId)
+        store.deleteArticle(localId, deleteLocal)
 
-    // 3. element delete
-    mainWindow.webContents.send('article:element-delete', localId)
+        // 2. cloud delete
+        if (deleteCloud && art && art.cloudId) {
+            let client = getArticleClient(localId)
+            client.articleDelete(art.cloudId, info => {
+                console.log('cloud article deleted:', info)
+            }, err => {
+                console.log('cloud article delete failed:', err)
+            })
+        }
 
-    // 4. local file delete
-    // TODO:
-})
+        // 3. element delete
+        mainWindow.webContents.send('article:element-delete', localId)
+    })
 
 ipcMain.on('article:paper-title', (event, paperId, localId) => {
     var client = getArticleClient(localId)
@@ -485,11 +532,15 @@ function openLoginModal() {
 
     loginWindow.once('ready-to-show', () => {
         loginWindow.show()
+        if (isDev) {
+            loginWindow.webContents.openDevTools();
+        }
     })
 
     loginWindow.on('closed', () => {
         loginWindow = null
     })
+
 }
 
 function openUserinfoModal() {
@@ -572,6 +623,7 @@ ipcMain.on('profile:login-check', (event) => {
     var username = settingStorage.getUsername()
     peClient = getPeClient(username)
     if (!peClient) {
+        const { PaperExplainedClient } = require('./modules/Communication.js')
         peClient = new PaperExplainedClient('articles', username)
     }
     peClient.amILogin((isLogin) => {
@@ -596,7 +648,7 @@ ipcMain.on('link:open', (event, link) => {
 })
 
 ipcMain.on('article:file-dropped', (event, fpath) => {
-    addLocalFileToEditor(fpath)
+    addLocalFileToEditor(fpath, mainWindow)
 })
 
 

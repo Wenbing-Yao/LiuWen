@@ -1,15 +1,37 @@
-const { configure } = require('nunjucks')
 const { contextBridge, ipcRenderer } = require('electron')
-const path = require('path')
+const DELETE_ARTICLE_INFO_TN = '../templates/article/delete-info.html'
+const { setLocaleLang, addSupportedLanguage, trans } = require('../locale/i18n')
 
-const DELETE_ARTICLE_INFO_TN = 'article/delete-info.html'
+
+function getTemplateEnv() {
+    const path = require('path')
+    const { configure } = require('nunjucks')
+
+    let env = configure(path.join(__dirname, '../templates'))
+    env.addFilter('trans', trans)
+
+    return env
+}
 
 function closeDeleteModal(localId) {
     ipcRenderer.send('article:modal-delete-close', localId)
 }
 
 function confirmArticleDelete(localId) {
-    ipcRenderer.send('article:modal-delete-confirm', localId)
+    var ele = document.getElementById("deleteCloudCheck")
+    var localEle = document.getElementById("deleteLocalFileCheck")
+    let deleteCloud = false
+    let deleteLocal = false
+
+    if (ele && ele.checked) {
+        deleteCloud = true
+    }
+
+    if (localEle && localEle.checked) {
+        deleteLocal = true
+    }
+
+    ipcRenderer.send('article:modal-delete-confirm', localId, deleteCloud, deleteLocal)
 }
 
 function cancelArticleDelete(localId) {
@@ -17,8 +39,11 @@ function cancelArticleDelete(localId) {
 }
 
 function loadArticleInfo(artInfo) {
-    env = configure(path.join(__dirname, '../templates'))
-    env.render(DELETE_ARTICLE_INFO_TN, {
+    var env = getTemplateEnv()
+    const path = require('path')
+    var fpath = path.join(__dirname, DELETE_ARTICLE_INFO_TN)
+
+    env.render(fpath, {
         art: artInfo
     }, (err, res) => {
         if (err) {
@@ -38,6 +63,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
 ipcRenderer.on('article:modal-delete-render-reply', (event, artInfo) => {
     loadArticleInfo(artInfo)
+})
+
+ipcRenderer.on('config:language', (event, language) => {
+    setLocaleLang(language)
+})
+ipcRenderer.on('config:supported-languages', (event, supported_languages) => {
+    addSupportedLanguage(supported_languages)
 })
 
 contextBridge.exposeInMainWorld('article', {

@@ -1,7 +1,7 @@
 {
     "name": "liuwen",
     "productName": "LiuWen",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "LiuWen markdown editor",
     "isDev": false,
     "main": "src/index.js",
@@ -22,7 +22,7 @@
     "config": {
         "forge": {
             "packagerConfig": {
-                "icon": "./src/static/win-logo.ico"
+                "icon": "./src/static/icons/icon-full.icns"
             },
             "makers": [{
                     "name": "@electron-forge/maker-squirrel",

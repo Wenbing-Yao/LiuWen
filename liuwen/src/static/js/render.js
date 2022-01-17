@@ -113,12 +113,12 @@ $(() => {
             for (let item of ev.dataTransfer.items) {
                 if (item.kind === 'file') {
                     var file = item.getAsFile();
-                    window.default.fileDropped(file.path)
+                    window.default.fileDropped(file.path, event.clientX, event.clientY)
                 }
             }
         } else {
             for (let file of ev.dataTransfer.files) {
-                window.default.fileDropped(file.path)
+                window.default.fileDropped(file.path, event.clientX, event.clientY)
             }
         }
     }
@@ -126,7 +126,31 @@ $(() => {
     function dragOverHandler(ev) {
         ev.preventDefault();
     }
+
+    $("body").on('drag', "main", (e) => {
+        // console.log('drag', e.target)
+    })
+
+    $("body").on('dragenter', "main", (e) => {
+        // console.log('dragenter', e.target)
+    })
+
+    $("body").on('dragend', "main", (e) => {
+        // console.log('dragend', e.target)
+    })
+
+    $("body").on('dragleave', "main", (e) => {
+        // console.log('dragleave', e.target)
+    })
+
+    $("body").on('dragstart', "main", (e) => {
+        // console.log('dragstart', e.target)
+    })
+
     $("body").on('dragover', "main", (e) => {
+        // console.log('dragover', e.target)
+        // console.log(e)
+        window.article.logPosition(e.clientX, e.clientY)
         dragOverHandler(e)
     })
 
@@ -156,6 +180,7 @@ $(() => {
         if (articleId) {
             window.article.updateArticle(articleId)
         } else if (role == SAVE_BASIC_ROLE_ADD) {
+            // TODO: 
             window.article.createArticle()
         }
     })
@@ -177,6 +202,15 @@ $(() => {
         if (articleId) {
             window.article.articleIssue(articleId)
         }
+    })
+
+    $("body").on("change", ".artinput", (event) => {
+        event.preventDefault()
+
+        window.article.articleMetaChange(
+            event.currentTarget.getAttribute("artid"),
+            event.currentTarget.getAttribute("field-type"),
+            event.currentTarget.value)
     })
 
     $("body").on('DOMSubtreeModified', ".rendered-html-for-article", (event) => {
@@ -206,6 +240,12 @@ $(() => {
         if (articleId) {
             window.article.articleDelete(articleId)
         }
+    })
+
+    $('[data-bs-toggle=tooltip]').each(function(index) {
+        let ele = document.getElementById($(this).attr('id'))
+        let tooltip = bootstrap.Tooltip.getOrCreateInstance(ele)
+        tooltip.enable()
     })
 
     $(document).on('click', 'a[href^="http"]', function(event) {

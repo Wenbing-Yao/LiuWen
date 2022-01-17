@@ -52,7 +52,7 @@ const richimage = {
         //     return false
         // }
 
-        const rule = /^!\[([^\]]*)\][\(]([^()\[\] \t]*)[ \t]*(\"[^\"]*\")?[\)](\{[^\}]*\})?/
+        const rule = /^!\[([^\]]*)\][\(]([^()\[\]"\t]*(?![ ]))[ \t]*(\"[^\"]*\")?[\)](\{[^\}]*\})?/
         const match = rule.exec(src)
 
         if (match) {
@@ -227,19 +227,18 @@ class ToCNode {
 }
 
 class Markdown {
-    constructor(fpath = null) {
+    constructor(relDir = null) {
         this.marked = marked
         this.dirRoot = null
         this.soup = null
         this.figPrefix = '图'
         this.figSuffix = '：'
         this.figNumber = 1
-        this.fpath = fpath
+        this.relDir = relDir
     }
 
     numberAllFigureCaptain(html, soupOnly = false) {
         if (!this.soup) {
-            console.log('new a soup in captain')
             this.soup = new JSSoup(html)
         }
         var soup = this.soup
@@ -267,18 +266,17 @@ class Markdown {
                     }
                     fig.append(newcap)
                 }
-
             }
             this.figNumber += 1
 
-            if (!this.fpath) {
+            if (!this.relDir) {
                 continue
             }
 
             var img = fig.find('img')
             if (!img || !img.attrs || !img.attrs.src || !img.attrs.src.startsWith('.')) continue
 
-            img.attrs.src = path.join(this.fpath, img.attrs.src)
+            img.attrs.src = path.join(this.relDir, img.attrs.src)
         }
 
         if (soupOnly) {
@@ -314,12 +312,14 @@ class Markdown {
             }
         }
 
-        this.dirRoot.setRoot()
-        var tocBody = this.dirRoot.toString()
-        var tocHead = "<p>文章目录</p>"
-        console.log('body:')
-        console.log(tocBody)
-        return `<div class="article-directory" id="article-directory">${tocHead}<hr>${tocBody}</div>`
+        if (this.dirRoot) {
+            this.dirRoot.setRoot()
+            var tocBody = this.dirRoot.toString()
+            var tocHead = "<p>文章目录</p>"
+            return `<div class="article-directory" id="article-directory">${tocHead}<hr>${tocBody}</div>`
+        }
+
+        return ""
     }
 
     addIdForAll(html = null) {
@@ -333,8 +333,6 @@ class Markdown {
 
         if (!firstEl) return
 
-        // console.log(firstEl.toString())
-        // console.log(firstEl)
         if (firstEl.attrs.id === undefined) {
             firstEl.attrs.id = uuidv4()
         }
@@ -361,7 +359,6 @@ class Markdown {
         if (notoc) {
             return html
         } else {
-            console.log('add directory')
             var toc = this.buildDirectory(html)
             return toc + html
         }

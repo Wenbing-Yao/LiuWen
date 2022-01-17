@@ -5,8 +5,9 @@ const path = require('path');
 const keytar = require('keytar')
 const md5 = require('md5')
 const defaultUser = 'LiuwenAppUserDefault2022'
+const { isDev } = require('./render/utils')
 
-const isDev = false
+// const isDev = false
 
 CONFIG = {
     db: {
@@ -18,6 +19,7 @@ CONFIG = {
         'database': 'db',
         'data': 'data',
         'article-data': 'data/articles',
+        'article-markdown': 'data/markdowns',
         'private': 'private'
     },
     serviceName: 'LiuWenEditor',
@@ -33,7 +35,7 @@ CONFIG = {
     },
     version: 'v0.1.0'
 }
-baseDir = app.getPath('userData')
+baseDir = isDev ? path.join(app.getPath('userData'), 'dev') : path.join(app.getPath('userData'), 'prod')
 userHome = app.getPath('home')
 
 class DirConfig {
@@ -97,8 +99,8 @@ class UserDirConfig {
 
     constructor(username) {
         this.CONFIG = CONFIG
-        this.appDir = app.getPath('userData')
-        this.baseDir = path.join(app.getPath('userData'), `userdata/${md5(username)}`)
+        this.appDir = baseDir
+        this.baseDir = path.join(baseDir, `userdata/${md5(username)}`)
     }
 
     keyValueStoreDir() {
@@ -115,6 +117,24 @@ class UserDirConfig {
 
     articleDir() {
         var dp = this.fullPath(this.CONFIG['relDir']['article-data'])
+        mkdirSync(dp, { recursive: true })
+        return dp
+    }
+
+    markdownDir() {
+        var dp = this.fullPath(this.CONFIG['relDir']['article-markdown'])
+        mkdirSync(dp, { recursive: true })
+        return dp
+    }
+
+    markdownArticleDir(article_slug) {
+        let dp = path.join(this.markdownDir(), article_slug)
+        mkdirSync(dp, { recursive: true })
+        return dp
+    }
+
+    markdownArticleImageDir(article_slug) {
+        let dp = path.join(this.markdownArticleDir(article_slug))
         mkdirSync(dp, { recursive: true })
         return dp
     }
@@ -256,7 +276,8 @@ const URLS = {
         'articles': {
             'GET': {
                 'list-article': 'article/alist/',
-                'article-meta': 'article/meta/{article_id}/'
+                'article-meta': 'article/meta/{article_id}/',
+                'article-delete': 'article/delete/{article_id}/'
             },
             'POST': {
                 'article-submit-censor': 'article/submit-censor/',
@@ -272,7 +293,8 @@ const URLS = {
                 'paper-article-update-tags': 'article-tags/aupdate/{article_id}/',
                 'paper-article-update-desc': 'article-desc/aupdate/{article_id}/',
                 'image-exists': 'articleimage/exists/',
-                'grocery-article-create': 'garticle/create/'
+                'grocery-article-create': 'garticle/create/',
+                'article-sync2local': 'article/list/sync/'
             }
         }
     }
