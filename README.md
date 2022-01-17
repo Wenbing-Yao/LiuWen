@@ -1,2 +1,2 @@
 # LiuWen
- An application for writing/reading articles from paperexplain.cn
+The markdown code editor for writing/reading articles from https://paperexplained.cn
