@@ -20,7 +20,8 @@ CONFIG = {
         'data': 'data',
         'article-data': 'data/articles',
         'article-markdown': 'data/markdowns',
-        'private': 'private'
+        'private': 'private',
+        'locale': '.locale'
     },
     serviceName: 'LiuWenEditor',
     passwordLen: 16,
@@ -53,6 +54,12 @@ class DirConfig {
 
     dataDir() {
         var dp = this.fullPath(this.CONFIG['relDir']['data'])
+        mkdirSync(dp, { recursive: true })
+        return dp
+    }
+
+    localeDir() {
+        var dp = this.fullPath(this.CONFIG['relDir']['locale'])
         mkdirSync(dp, { recursive: true })
         return dp
     }
@@ -214,10 +221,8 @@ class AccountConfig {
     async dbPassword() {
         var pw = await keytar.getPassword(this.serviceName, this.passwordAccount)
         if (pw == null) {
-            console.log('create new password')
             return this.createPassForDB()
         }
-        console.log('read password from system')
         return pw
     }
 }

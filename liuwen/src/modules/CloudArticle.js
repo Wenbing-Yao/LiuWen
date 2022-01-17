@@ -10,14 +10,18 @@ const { PaperExplainedClient } = require('./Communication')
 const { Markdown } = require('./LiuwenMarkDown')
 const { WORK_BASE } = require('./config')
 const { trans: _ } = require('../locale/i18n')
+const { getLogger } = require('../modules/render/utils')
+
+const logger = getLogger(__filename)
+
 
 function fileExists(fpath) {
     try {
         accessSync(fpath.trim(), constants.F_OK)
         return true
     } catch (err) {
-        console.log('file exists error:', fpath)
-        console.log(err)
+        logger.error('file exists error:', fpath)
+        logger.error(err)
     }
     return false
 }
@@ -88,20 +92,19 @@ class CloudArticle {
         if (fileExists(source)) {
             return this.uploadImage(source, true, success, error)
         } else {
-            console.log('文件不存在本地！', source)
+            logger.info('文件不存在本地！', source)
         }
         var fpath = path.join(workon, path.basename(source))
         if (fileExists(fpath)) {
             return this.uploadImage(fpath, true, success, error)
         } else {
-            console.log('文件不存在本地，尝试从网络下载！', fpath)
+            logger.info('文件不存在本地，尝试从网络下载！', fpath)
         }
-        console.log('文件不存在：', source)
 
         return this.download(source, workon, (ofname) => {
             return this.uploadImage(path.join(workon, ofname), true, success, error)
         }, () => {
-            console.log(`Prepare an image, download failed: ${source}`)
+            logger.error(`Prepare an image, download failed: ${source}`)
         })
     }
 
@@ -132,10 +135,10 @@ class CloudArticle {
             }
         }, error).then(info => {
             if (info.exists) {
-                console.log('image exists: ', info.url)
+                logger.info('image exists: ', info.url)
                 return info.url
             } else {
-                console.log(`Start upload image: ${source}`)
+                logger.info(`Start upload image: ${source}`)
                 return this.client.post('uploadImage', {
                     hexdigest: hexdigest
                 }, {
@@ -201,8 +204,8 @@ class CloudArticle {
             }
             imageUrls.push(this.prepareImage(
                 ipath, workon,
-                info => console.log('upload image success:', info),
-                err => console.log('upload image failed:', err)))
+                info => logger.info('upload image success:', info),
+                err => logger.error('upload image failed:', err)))
         }
 
         Promise.all(imageUrls).then((values) => {
@@ -364,6 +367,7 @@ class CloudArticle {
                 }
                 artInfo.markdown_content = md
             }
+
             this.client.post('groceryArticleCreate', artInfo, null, success, error)
         })
     }
@@ -378,36 +382,36 @@ class CloudArticle {
 
     updateMeta(artInfo) {
         this.updateDesc(artInfo.cloudId, artInfo.desc,
-            info => console.log('desc updated:', info),
-            err => console.log('desc updated failed:', err))
+            info => logger.info('desc updated:', info),
+            err => logger.error('desc updated failed:', err))
         this.updateTags(artInfo.cloudId, artInfo.tags,
-            info => console.log('tags updated:', info),
-            err => console.log('tags updated failed:', err))
+            info => logger.info('tags updated:', info),
+            err => logger.error('tags updated failed:', err))
         this.updateTitle(artInfo.cloudId, artInfo.title,
-            info => console.log('title updated:', info),
-            err => console.log('title updated failed:', err))
+            info => logger.info('title updated:', info),
+            err => logger.error('title updated failed:', err))
     }
 
     articleSubmitCensor() {
         var artInfo = this.store.getArticle(this.localId)
         if (artInfo.contributed) {
-            console.log("文章已投稿！", this.localId)
+            logger.info("文章已投稿！", this.localId)
             return
         }
         if (!artInfo.cloudId) {
-            console.log(`文章尚未同步到云端: ${this.localId}`)
+            logger.info(`文章尚未同步到云端: ${this.localId}`)
             return
         }
 
         return this.client.post('articleSubmitCensor', { 'object_id': artInfo.cloudId }, null,
             info => {
-                console.log("文章投稿成功：", info)
+                logger.info("文章投稿成功：", info)
                 this.store.updateArticle(this.localId, {
                     contributed: true,
                     status: info.status
                 })
             },
-            err => console.log(`文章投稿失败：${err}`))
+            err => logger.error(`文章投稿失败：${err}`))
     }
 
     syncToCloud(success) {
@@ -419,7 +423,7 @@ class CloudArticle {
                     if (artInfo.cloudId) {
                         this.updateContent(artInfo.paperId, artInfo.cloudId, artInfo.filePath,
                             success,
-                            err => console.log('content update failed:', err),
+                            err => logger.error('content update failed:', err),
                             false)
                         this.updateMeta(artInfo)
                         if (!artInfo['paperTitle']) {
@@ -444,9 +448,9 @@ class CloudArticle {
                                 success(info)
                             }
                         },
-                        err => console.log('paper article create failed:', err))
+                        err => logger.error('paper article create failed:', err))
                 },
-                err => console.log(`获取论文标题错误(ID: ${artInfo.paperId})：${err}`))
+                err => logger.error(`获取论文标题错误(ID: ${artInfo.paperId})：${err}`))
             return
         }
         if (artInfo.cloudId) {
@@ -459,9 +463,9 @@ class CloudArticle {
                     if (success) {
                         success(info)
                     }
-                    console.log('content updated!')
+                    logger.info('content updated!')
                 },
-                err => console.log('update content failed:', err))
+                err => logger.error('update content failed:', err))
 
             this.updateMeta(artInfo)
             return
@@ -478,7 +482,7 @@ class CloudArticle {
                     success(info)
                 }
             },
-            err => console.log('grocery create failed:', err))
+            err => logger.error('grocery create failed:', err))
     }
 
     prepareCloudImage(markdownContent, baseDir, success) {
@@ -501,10 +505,10 @@ class CloudArticle {
         for (let isrc of imageSources) {
             imageUrls.push(this.download(isrc, baseDir,
                 ofname => {
-                    console.log(`Download ${ofname} successfully!`)
+                    logger.info(`Download ${ofname} successfully!`)
                     return `./${ofname}`
                 },
-                () => console.log(`Download "${isrc} failed!"`)))
+                () => logger.error(`Download "${isrc} failed!"`)))
         }
 
         return Promise.all(imageUrls).then((values) => {
@@ -520,10 +524,12 @@ class CloudArticle {
     }
 
     syncAllToLocal(existings, browserWindow) {
-        console.log("existings:", existings, typeof existings, existings.length)
+        logger.info("existings:", existings, typeof existings, existings.length)
         this.client.post('articleSync2local', { 'ids': existings }, null,
             arts => {
                 for (let art of arts) {
+
+                    // logger.info('start sync art: ', art)
                     // 1. save local storage
                     this.store.syncCloudArticle(art, (localId) => {
                         let baseDir = this.store.cloudArticleImageDir(art)
@@ -539,8 +545,8 @@ class CloudArticle {
                 }
             },
             err => {
-                console.log(`文章同步失败：`)
-                console.log(err)
+                logger.error(`文章同步失败：`)
+                logger.error(err)
             })
     }
 }

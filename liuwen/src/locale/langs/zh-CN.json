@@ -79,5 +79,7 @@
     "Separate with commas": "使用英文逗号隔开",
     "(Max: 5)": "（最多：5个）",
     "Tips:": "提示：",
-    "Submitted": "已提交"
+    "Submitted": "已提交",
+    "Rows": "行",
+    "Columns": "列"
 }

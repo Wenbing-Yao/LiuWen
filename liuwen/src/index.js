@@ -3,7 +3,9 @@ const { configure } = require('nunjucks')
 const path = require('path')
 const fs = require('fs')
 
-const { isDev } = require('./modules/config')
+const { prepareDir } = require('./modules/backend/utils')
+const { getLogger } = require('./modules/render/utils')
+const { isDev, dirConfig } = require('./modules/config')
 const { ArticleStorage } = require('./modules/ArticleStorage')
 const { closeArticleDeleteModal, fetchLocalId, openArticleDeleteModal } = require('./modules/Modal')
 const { getKeyValue } = require('./modules/RawKeyValueStore')
@@ -16,6 +18,8 @@ let mainWindow = null
 let loginWindow = null
 let userinfoModal = null
 let peClient = null
+
+const log = getLogger(__filename)
 
 function getPeClient(username = null) {
     if (username == null)
@@ -59,9 +63,13 @@ function saveFileContent(file, content) {
             defaultPath: app.getPath('documents'),
             filters: [{
                 name: 'Markdown',
-                extensions: ['md', 'markdown']
+                extensions: ['md']
             }]
         });
+    }
+
+    if (file && !file.endsWith('.md')) {
+        file += '.md'
     }
 
     fs.writeFileSync(file, content)
@@ -73,20 +81,24 @@ const isMac = process.platform === 'darwin'
 
 function buildLocaleIndex(callback) {
 
-    let project_root = path.dirname(__dirname)
     let lang = getLanguage()
-    let ofpath = `${project_root}/src/templates/langs/index-${app.getVersion()}-${lang}.html`
+    let ofpath = path.join(dirConfig.localeDir(),
+        `src/templates/langs/index-${app.getVersion()}-${lang}.html`
+    )
+    prepareDir(ofpath)
 
-    console.log(`Got language in build index: ${getLanguage()}`)
+    let project_root_abs = path.resolve(path.dirname(__dirname))
+
+    log.info(`Got language in build index: ${getLanguage()}`)
     env = configure(path.join(__dirname, 'templates'))
     env.addFilter('trans', trans)
     let index_fpath = path.join(__dirname, './templates/index.html')
     env.render(index_fpath, {
-        project_root: "../../.."
+        project_root: project_root_abs
     }, (err, res) => {
         if (err) {
-            console.log('an error happend!')
-            console.log(err)
+            log.error('an error happend!')
+            log.error(err)
             throw err
         }
         fs.writeFileSync(ofpath, res)
@@ -185,12 +197,6 @@ const createWindow = async() => {
         nativeTheme.themeSource = 'system'
     })
 
-    // Open the DevTools.
-    if (isDev) {
-        console.log('this is a development environment!', isDev)
-        mainWindow.webContents.openDevTools();
-    }
-
     // var pw = await accountConfig.dbPassword()
 
     mainWindow.once('ready-to-show', () => {
@@ -198,6 +204,11 @@ const createWindow = async() => {
         mainWindow.webContents.send('config:language', getLanguage())
         mainWindow.webContents.send('config:supported-languages', getSupportedLanguages())
             // getFileFromUser();
+            // Open the DevTools.
+        if (isDev) {
+            log.debug('this is a development environment!', isDev)
+            mainWindow.webContents.openDevTools();
+        }
     })
 
     app.setAboutPanelOptions({
@@ -267,7 +278,6 @@ ipcMain.on('article:render', (event, type) => {
     var peClient = getPeClient()
     if (!peClient.isLogin) {
         event.reply('article:render-reply', type, [])
-        console.log(`user is not login, so not article is issued!`)
         return
     }
 
@@ -307,7 +317,7 @@ ipcMain.on('article:check-status', (event, localId, cloudId) => {
     var client = getArticleClient(localId)
     client.articleMeta(cloudId,
         (info) => handleFreshArticleMeta(info, localId, event),
-        (err) => console.log('article meta error: ', err),
+        (err) => log.error('article meta error: ', err),
     )
 })
 
@@ -317,13 +327,13 @@ ipcMain.on('article:check-issued', (event, localId) => {
     var preInfo = store.getArticle(localId)
 
     if (!preInfo || !preInfo.cloudId) {
-        console.log(`Article cloud id not set: [${localId}]`)
+        log.info(`Article cloud id not set: [${localId}]`)
         return
     }
 
     client.articleMeta(preInfo.cloudId,
         (info) => handleFreshArticleMeta(info, localId, event),
-        (err) => console.log('article meta error: ', err),
+        (err) => log.error('article meta error: ', err),
     )
 })
 
@@ -401,7 +411,7 @@ ipcMain.on('article:delete', (event, localId, deleteCloud, deleteFile) => {
 ipcMain.on('article:modal-delete-render', (event) => {
     var localId = fetchLocalId()
     if (!localId) {
-        console.log('no localid')
+        log.info('no localid')
         event.reply('article:modal-delete-render-reply', null)
         return
     }
@@ -411,7 +421,6 @@ ipcMain.on('article:modal-delete-render', (event) => {
 })
 
 ipcMain.on('article:modal-delete-close', (event, localId) => {
-    console.log('delete close:', localId)
     closeArticleDeleteModal(localId)
 })
 
@@ -428,9 +437,9 @@ ipcMain.on('article:modal-delete-confirm',
         if (deleteCloud && art && art.cloudId) {
             let client = getArticleClient(localId)
             client.articleDelete(art.cloudId, info => {
-                console.log('cloud article deleted:', info)
+                log.info('cloud article deleted:', info)
             }, err => {
-                console.log('cloud article delete failed:', err)
+                log.error('cloud article delete failed:', err)
             })
         }
 
@@ -451,23 +460,21 @@ ipcMain.on('userinfo:render', (event) => {
 })
 
 function buildLocaleLogin(callback) {
-    let project_root = path.dirname(__dirname)
+    let project_root_abs = path.resolve(path.dirname(__dirname))
     let lang = getLanguage()
-    let ofdir = `${project_root}/src/templates/langs/profile`
-    let ofpath = `${ofdir}/login-${app.getVersion()}-${lang}.html`
-
-    if (!fs.existsSync(ofdir)) {
-        fs.mkdirSync(ofdir)
-    }
+    let ofpath = path.join(dirConfig.localeDir(),
+        `src/templates/langs/profile/login-${app.getVersion()}-${lang}.html`
+    )
+    prepareDir(ofpath)
 
     env = configure(__dirname)
     env.addFilter('trans', trans)
     let index_fpath = path.join(__dirname, './templates/profile/login.html')
     env.render(index_fpath, {
-        rel_proj_root: "../../../.."
+        rel_proj_root: project_root_abs
     }, (err, res) => {
         if (err) {
-            console.log(err)
+            log.error(err)
             return
         }
         fs.writeFileSync(ofpath, res)
@@ -478,23 +485,19 @@ function buildLocaleLogin(callback) {
 }
 
 function buildLocaleUserInfo(callback) {
-    let project_root = path.dirname(__dirname)
-    let lang = getLanguage()
-    let ofdir = `${project_root}/src/templates/langs/profile`
-    let ofpath = `${ofdir}/user-${app.getVersion()}-${lang}.html`
-
-    if (!fs.existsSync(ofdir)) {
-        fs.mkdirSync(ofdir)
-    }
+    let project_root_abs = path.resolve(path.dirname(__dirname))
+    let ofpath = path.join(dirConfig.localeDir(),
+        `src/templates/langs/profile/user-${app.getVersion()}-${getLanguage()}.html`)
+    prepareDir(ofpath)
 
     env = configure(__dirname)
     env.addFilter('trans', trans)
     let index_fpath = path.join(__dirname, './templates/profile/user.html')
     env.render(index_fpath, {
-        rel_proj_root: "../../../.."
+        rel_proj_root: project_root_abs
     }, (err, res) => {
         if (err) {
-            console.log(err)
+            log.error(err)
             return
         }
         fs.writeFileSync(ofpath, res)
@@ -592,7 +595,7 @@ ipcMain.on('profile:login-show', (event) => {
     openLoginModal()
     peClient = getPeClient()
     peClient.amILogin((status) => {
-        console.log(`User login status: ${status}`)
+        log.info(`User login status: ${status}`)
     })
 
 })
@@ -612,7 +615,7 @@ ipcMain.on('profile:logout', (event) => {
             closeUserinfoModal()
             mainWindow.webContents.send('profile:logout-success')
         },
-        err => console.log('Logout failed:', err))
+        err => log.error('Logout failed:', err))
 })
 
 ipcMain.on('profile:login-cancel', (event) => {
@@ -659,11 +662,8 @@ app.whenReady().then(() => {
     })
 
     if (!ret) {
-        console.log('registration failed')
+        log.error('registration failed')
     }
-
-    // 检查快捷键是否注册成功
-    // console.log(globalShortcut.isRegistered('CommandOrControl+O'))
 })
 
 app.on('will-quit', () => {

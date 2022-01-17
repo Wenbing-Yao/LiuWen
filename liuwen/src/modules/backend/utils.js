@@ -20,8 +20,15 @@ function getArticleClient(localId, username = null) {
     return new CloudArticle(localId, username)
 }
 
+function prepareDir(fpath) {
+    const { mkdirSync } = require('fs')
+    const path = require('path')
+    mkdirSync(path.dirname(fpath), { recursive: true })
+}
+
 
 module.exports = {
     getArticleClient,
-    getPeClient
+    getPeClient,
+    prepareDir
 }

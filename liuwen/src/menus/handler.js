@@ -3,6 +3,9 @@ const path = require('path')
 const { ArticleStorage } = require('../modules/ArticleStorage')
 const { settingStorage } = require('../modules/UserSettings')
 const { getArticleClient } = require('../modules/backend/utils')
+const { getLogger } = require('../modules/render/utils')
+
+const logger = getLogger(__filename)
 
 function getStorage(username = null) {
     if (username == null) {
@@ -14,7 +17,7 @@ function getStorage(username = null) {
 
 function addLocalFileToEditor(fpath, browserWindow) {
     if (!fpath.endsWith('.md')) {
-        console.log(`This is not markdown file, ignore: ${fpath}`)
+        logger.info(`This is not markdown file, ignore: ${fpath}`)
         return
     }
     var store = getStorage()
@@ -51,11 +54,11 @@ function fetchFileContent() {
     })
 
     if (fpath) {
-        console.log(`文件路径为：${fpath}`)
+        logger.info(`文件路径为：${fpath}`)
         return fpath[0]
     }
 
-    console.log('未选择文件')
+    logger.info('未选择文件')
     return null
 }
 
@@ -76,7 +79,6 @@ function syncToLocal(menuItem, browserWindow, event) {
 }
 
 function insertMarkdownElement(menuItem, browserWindow, event, type) {
-    console.log(menuItem.label, type)
     browserWindow.webContents.send('article:insert', type)
 }
 

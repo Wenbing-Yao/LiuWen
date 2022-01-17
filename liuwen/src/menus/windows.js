@@ -27,7 +27,7 @@ const menuTemplate = [{
             {
                 label: _('Sync To Local'),
                 click: syncToLocal,
-                enabled: false
+                accelerator: 'Ctrl+Shift+s'
             }
         ]
     },

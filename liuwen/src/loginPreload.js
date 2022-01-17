@@ -1,5 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
+const { getLogger } = require('./modules/render/utils')
+
+const logger = getLogger(__filename)
+
 function cancelLogin() {
     ipcRenderer.send('profile:login-cancel')
 }
@@ -12,7 +16,7 @@ function submitLogin() {
     var password = passwordEle.value
 
     if (!username || !password) {
-        console.log(`用户名和密码不能为空!`)
+        logger.info(`用户名和密码不能为空!`)
         return
     }
 

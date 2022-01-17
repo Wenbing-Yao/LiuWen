@@ -1,6 +1,10 @@
 const path = require('path')
-const { isDev } = require('../modules/config')
 
+const { prepareDir } = require('../modules/backend/utils')
+const { isDev, dirConfig } = require('../modules/config')
+const { getLogger } = require('../modules/render/utils')
+
+const logger = getLogger(__filename)
 let modalBuf = new Map()
 let articleDeleteBuf = new Map()
 
@@ -39,28 +43,24 @@ function buildLocaleDelete(callback) {
     const { app } = require('electron')
     const { configure } = require('nunjucks')
     const { trans } = require('../locale/i18n')
-
-    let project_root = path.dirname(path.dirname(__dirname))
-    let lang = getLanguage()
-    let ofdir = `${project_root}/src/templates/langs/article`
-    let ofpath = `${ofdir}/delete-${app.getVersion()}-${lang}.html`
-    const fs = require('fs')
-
-    if (!fs.existsSync(ofdir)) {
-        fs.mkdirSync(ofdir)
-    }
+    let project_root_abs = path.resolve(path.dirname(path.dirname(__dirname)))
+    let ofpath = path.join(dirConfig.localeDir(),
+        `src/templates/langs/article/delete-${app.getVersion()}-${getLanguage()}.html`
+    )
+    prepareDir(ofpath)
 
     env = configure(path.dirname(__dirname))
     env.addFilter('trans', trans)
     let index_fpath = path.join(path.dirname(__dirname), './templates/article/delete.html')
     env.render(index_fpath, {
-        rel_proj_root: "../../../.."
+        rel_proj_root: project_root_abs
     }, (err, res) => {
         if (err) {
-            console.log(err)
+            logger.error(err)
             return
         }
-        fs.writeFileSync(ofpath, res)
+        const { writeFileSync } = require('fs')
+        writeFileSync(ofpath, res)
         callback(ofpath)
     })
 

@@ -2,6 +2,9 @@ const { safeStorage } = require('electron')
 const { defaultUser, UserDirConfig } = require('./config')
 const path = require('path')
 const { readFileSync, writeFileSync } = require('fs')
+const { getLogger } = require('../modules/render/utils')
+
+const logger = getLogger(__filename)
 
 
 function storeKeyValue(key, value, username = defaultUser) {
@@ -21,7 +24,7 @@ function getKeyValue(key, username = defaultUser) {
         return value
     } catch (err) {
         if (err.code != 'ENOENT') {
-            console.log(`An err happened, when get key value: ${err}`)
+            logger.error(`An err happened, when get key value: ${err}`)
         }
     }
 }
@@ -38,7 +41,7 @@ function getKeyJson(key, username = defaultUser) {
             return jsonData
         }
     } catch (err) {
-        console.error('Get json key error:', err)
+        logger.error('Get json key error:', err)
     }
     return {}
 }

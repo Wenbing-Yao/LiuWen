@@ -1,6 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron')
 const DELETE_ARTICLE_INFO_TN = '../templates/article/delete-info.html'
 const { setLocaleLang, addSupportedLanguage, trans } = require('../locale/i18n')
+const { getLogger } = require('../modules/render/utils')
+
+const logger = getLogger(__filename)
 
 
 function getTemplateEnv() {
@@ -47,7 +50,7 @@ function loadArticleInfo(artInfo) {
         art: artInfo
     }, (err, res) => {
         if (err) {
-            console.log('render article delete err: ', err)
+            logger.error('render article delete err: ', err)
         } else {
             const element = document.getElementById('id-article')
             if (element) {

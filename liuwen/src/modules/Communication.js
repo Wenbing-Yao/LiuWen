@@ -6,8 +6,11 @@ const FormData = require('form-data');
 const { storeKeyJson, getKeyJson } = require('./RawKeyValueStore')
 const { settingStorage } = require('./UserSettings')
 const { isDev, URLS } = require('./config')
+const { getLogger } = require('../modules/render/utils')
 
+const logger = getLogger(__filename)
 const baseUrl = isDev ? URLS['dev-domain'] : URLS.domain
+
 
 const Paths = {
     'login': 'accounts/login/',
@@ -110,7 +113,7 @@ class PaperExplainedClient {
 
     get(fname, success, error, urlParams) {
         if (!error) {
-            error = err => console.log(`Get error: ${err}`)
+            error = err => logger.error(`Get error: ${err}`)
         }
 
         if (!this[fname]) {
@@ -125,7 +128,7 @@ class PaperExplainedClient {
 
         if (!error) {
             error = err => {
-                console.log(`post error: ${err}`)
+                logger.error(`post error: ${err}`)
             }
 
         }
@@ -151,7 +154,7 @@ class PaperExplainedClient {
             let u = new URL(url)
             pathname = u.pathname
         } catch (err) {
-            console.log(`Not valid url: ${url}`)
+            logger.error(`Not valid url: ${url}`)
             pathname = url
         }
         return path.basename(pathname)
@@ -160,11 +163,11 @@ class PaperExplainedClient {
     download(url, directory, success, error) {
         let fname = this.extractFilename(url)
 
-        console.log(`download url: ${url}`)
+        logger.info(`download url: ${url}`)
 
         return fetch(url).then(response => new Promise((resolve, reject) => {
             if (!response.ok) {
-                console.log(`Url "${url}" download failed!`)
+                logger.error(`Url "${url}" download failed!`)
                 return reject(null)
             }
 
@@ -206,7 +209,7 @@ class PaperExplainedClient {
                     if (success) {
                         success(info)
                     } else {
-                        console.log('ajax get success, url:', url)
+                        logger.info('ajax get success, url:', url)
                     }
                     return info
                 })
@@ -321,7 +324,7 @@ class PaperExplainedClient {
                         if (success) {
                             success(json["info"])
                         } else {
-                            console.log('ajax post success, url:', url)
+                            logger.info('ajax post success, url:', url)
                         }
                         return json["info"]
                     })

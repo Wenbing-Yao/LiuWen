@@ -1,7 +1,9 @@
 const { configure } = require('nunjucks')
 const { contextBridge, ipcRenderer } = require('electron')
 const path = require('path')
+const { getLogger } = require('../modules/render/utils')
 
+const logger = getLogger(__filename)
 const USERINFO_TEMPLATE_NAME = 'profile/userinfo.html'
 
 function closeUserinfo() {
@@ -17,8 +19,8 @@ function loadUserinfo(user) {
     env.render(USERINFO_TEMPLATE_NAME, {
         user: user
     }, (err, res) => {
-        console.log('err: ', err)
-        console.log('render res: ', res)
+        logger.error('err: ', err)
+        logger.error('render res: ', res)
         const element = document.getElementById('id-userinfo')
         if (element) {
             element.innerHTML = res

@@ -27,21 +27,18 @@ class ArticleStateSync {
         var finished = this.checkFinished()
         if (finished) {
             this.lastRun = Date.now()
-                // console.log(`finish task: ${this.localId}`)
             return finished
         }
 
         if (this.lastRun == null) {
             this.lastRun = Date.now()
             this.callback(this.localId)
-                // console.log(`first run task: ${this.localId}`)
             return this.checkFinished()
         }
 
         if (Date.now() - this.lastRun > this.Interval) {
             this.lastRun = Date.now()
             this.callback(this.localId)
-                // console.log(`consecutive run task: ${this.localId}`)
             return this.checkFinished()
         }
 

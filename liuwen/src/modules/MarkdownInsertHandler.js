@@ -3,7 +3,9 @@ const amdRequire = amdLoader.require;
 const path = require('path')
 let monaco = null
 let monacoSeted = false
+const { getLogger } = require('../modules/render/utils')
 
+const logger = getLogger(__filename)
 const ADD_TABLE_MODAL_ID = "addTableModal"
 
 
@@ -90,7 +92,7 @@ function insertTable(editor, type) {
     const bootstrap = require('bootstrap')
     var ele = document.getElementById(ADD_TABLE_MODAL_ID)
     if (!ele) {
-        console.log(`Insert table element not found: ${ADD_TABLE_MODAL_ID}`)
+        logger.info(`Insert table element not found: ${ADD_TABLE_MODAL_ID}`)
         return
     }
     var addModal = bootstrap.Modal.getOrCreateInstance(ele)
@@ -101,7 +103,7 @@ function insertTableDetail(editor, row, col) {
     const bootstrap = require('bootstrap')
     var ele = document.getElementById(ADD_TABLE_MODAL_ID)
     if (!ele) {
-        console.log(`Insert table element not found: ${ADD_TABLE_MODAL_ID}`)
+        logger.info(`Insert table element not found: ${ADD_TABLE_MODAL_ID}`)
         return
     }
     var addModal = bootstrap.Modal.getOrCreateInstance(ele)
@@ -306,7 +308,7 @@ function insertImage(editor, type, fpath = "", newLine = false) {
 
 function insertToMarkdownEditor(editor, type) {
     if (!editor) {
-        console.log(`No editor found for type ${type}`)
+        logger.info(`No editor found for type ${type}`)
         return
     }
 
@@ -359,7 +361,7 @@ function insertToMarkdownEditor(editor, type) {
             break
         default:
             callfunc = (editor, type) => {
-                console.log(`Unkown markdown item type: ${type}`)
+                logger.info(`Unkown markdown item type: ${type}`)
             }
             break
     }

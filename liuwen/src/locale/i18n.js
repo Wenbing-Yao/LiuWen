@@ -1,8 +1,12 @@
 const { readFileSync, writeFileSync } = require('fs')
 const path = require('path')
+const { isDev } = require('../modules/render/utils')
+const { getLogger } = require('../modules/render/utils')
+
+const logger = getLogger(__filename)
 
 let SUPPORTED_LANGUAGES = new Set([
-    'zh-CN', 'en'
+    'zh-CN', 'en', 'en-US'
 ])
 let TOBE_ADDED = new Set()
 let isAdding = false
@@ -21,7 +25,7 @@ function addSupportedLanguage(langs) {
 
 function getLanguage() {
     if (!localeLang) {
-        console.error('Language not set! Return `en`.')
+        logger.error('Language not set! Return `en`.')
         return 'en'
     }
     return localeLang
@@ -52,11 +56,15 @@ function setTranslations() {
         translationSeted = true
         return json
     } catch (err) {
-        console.log('Get translation error: ', err)
+        logger.error('Get translation error: ', err)
     }
 }
 
 function setTodoKey(key) {
+    if (!isDev) {
+        return
+    }
+
     TOBE_ADDED.add(key)
     if (isAdding) {
         return
@@ -78,13 +86,21 @@ function setTodoKey(key) {
                 json = {}
             }
 
+            let modified = false
+
             for (let k of TOBE_ADDED) {
-                json[k] = ""
+                if (json[k] === undefined) {
+                    json[k] = ""
+                    modified = true
+                }
             }
-            writeFileSync(fpath, JSON.stringify(json, null, 4))
+
+            if (modified) {
+                writeFileSync(fpath, JSON.stringify(json, null, 4))
+            }
         }
     } catch (err) {
-        console.log('Set todo key error: ', err)
+        logger.error('Set todo key error: ', err)
     } finally {
         isAdding = false
     }

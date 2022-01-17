@@ -4,7 +4,6 @@ const path = require('path')
 const JSSoup = require('jssoup').default
 
 const renderer = {
-
     table(header, body) {
         if (body) body = '<tbody>' + body + '</tbody>';
 

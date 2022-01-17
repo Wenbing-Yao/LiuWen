@@ -1,7 +1,11 @@
-const { dirConfig, version, UserDirConfig } = require('./config');
+const { version, UserDirConfig } = require('./config');
 const { writeFileSync, readFile, readFileSync, rm, accessSync, constants, writeFile } = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const { getLogger } = require('../modules/render/utils')
+
+const logger = getLogger(__filename)
+
 
 /*
 Configure File Format:
@@ -68,7 +72,7 @@ class ArticleStorage {
                 delete reverseDict[fpath]
                 writeFileSync(this.articleReverseFinderPath, JSON.stringify(reverseDict))
             } else {
-                console.log('fpath not found: ', fpath)
+                logger.info('fpath not found: ', fpath)
             }
             return
         } catch (err) {
@@ -134,7 +138,7 @@ class ArticleStorage {
             data = JSON.parse(data)
         }
         if (data['articles'][id]) {
-            console.log(`ID 已存在: ${id}`)
+            logger.info(`ID 已存在: ${id}`)
             return
         }
         data['articles'][id] = meta
@@ -144,7 +148,7 @@ class ArticleStorage {
     deleteArticleMeta(id) {
         readFile(this.articleConfigPath, (err, data) => {
             if (err) {
-                console.log(err)
+                logger.error(err)
                 return
             }
             data = JSON.parse(data)
@@ -162,7 +166,7 @@ class ArticleStorage {
         meta.id = id
         readFile(this.articleConfigPath, (err, data) => {
             if (err) {
-                console.log(err)
+                logger.error(err)
                 return
             }
             data = JSON.parse(data)
@@ -186,7 +190,7 @@ class ArticleStorage {
         try {
             var raw = readFileSync(this.articleConfigPath)
         } catch (e) {
-            console.log('文件不存在！', e)
+            logger.info('文件不存在！', e)
             return []
         }
         if (raw) {
@@ -200,7 +204,7 @@ class ArticleStorage {
     getArticleMdPath(id) {
         var fpath = this.getArticleMetaContentPath(id)
         if (!fpath) {
-            console.log(`Meta文件不存在 ${id}`)
+            logger.info(`Meta文件不存在 ${id}`)
             return
         }
 
@@ -306,7 +310,7 @@ class ArticleStorage {
         let mdFpath = path.join(mdDir, 'main.md')
         writeFile(mdFpath, info.markdown_content, 'utf8', (err) => {
             if (err) {
-                console.log(`sync cloud article to local failed, error: ${err}`)
+                logger.error(`sync cloud article to local failed, error: ${err}`)
                 return
             }
 
@@ -350,15 +354,15 @@ class ArticleStorage {
         if (deleteLocal && filePath) {
             rm(filePath, (err) => {
                 if (err) {
-                    console.log("Local file delete failed:", err, ` local id: ${id}`)
+                    logger.error("Local file delete failed:", err, ` local id: ${id}`)
                 } else {
-                    console.log(`Local file deleted, local id: ${id}`)
+                    logger.info(`Local file deleted, local id: ${id}`)
                 }
             })
         }
         rm(meta.fpath, (err) => {
             if (err) {
-                console.log('删除文件出错，元信息：', meta, "错误:", err)
+                logger.error('删除文件出错，元信息：', meta, "错误:", err)
             }
         })
         this.deleteArticleMeta(id)
@@ -369,7 +373,7 @@ class ArticleStorage {
         var fpath = this.getArticleMetaContentPath(id)
         info = this.purifyArtInfo(info)
         if (!fpath) {
-            console.log(`文件不存在：${fpath}`)
+            logger.info(`文件不存在：${fpath}`)
             return
         }
         if (info.synced && !info.contributed && !info.issued) {
@@ -384,7 +388,7 @@ class ArticleStorage {
     updateArticleContent(id, content) {
         var filePath = this.getArticleMdPath(id)
         if (!filePath) {
-            console.log(`未找到源文件：${id}`)
+            logger.info(`未找到源文件：${id}`)
         }
         this.updateArticle(id, {})
         writeFileSync(filePath, content)
@@ -398,12 +402,12 @@ class ArticleStorage {
     getArticle(id) {
         var fpath = this.getArticleMetaContentPath(id)
         if (!fpath) {
-            console.log(`文件不存在：${fpath}, id: ${id}`)
+            logger.info(`文件不存在：${fpath}, id: ${id}`)
             return
         }
         var raw = readFileSync(fpath)
         if (!raw) {
-            console.log('return none')
+            logger.info('return none')
             return {}
         }
         var info = JSON.parse(raw);

@@ -13,11 +13,12 @@ const {
     setPostionAtStart,
     dropImageAt
 } = require('./modules/MarkdownInsertHandler')
-const { filename } = require('./modules/render/utils')
+const { filename, getLogger } = require('./modules/render/utils')
 const { trans, setLocaleLang, addSupportedLanguage, getLanguage } = require('./locale/i18n');
 const { readFileSync } = require('fs');
 const _ = trans
 
+const logger = getLogger(__filename)
 
 let editorBuf = new Map();
 let articleEditors = new Map();
@@ -146,7 +147,7 @@ class ArticleInfoFetcher {
         if (ele) {
             return ele.value;
         } else {
-            console.log(`文章 ${this.id} Paper Id 元素 ${eleId} 不存在！`)
+            logger.info(`文章 ${this.id} Paper Id 元素 ${eleId} 不存在！`)
             return "";
         }
     }
@@ -162,7 +163,7 @@ class ArticleInfoFetcher {
         if (ele) {
             return ele.value;
         } else {
-            console.log(`文章 ${this.id} Title 元素 ${eleId} 不存在！`)
+            logger.info(`文章 ${this.id} Title 元素 ${eleId} 不存在！`)
             return "";
         }
     }
@@ -178,7 +179,7 @@ class ArticleInfoFetcher {
         if (ele) {
             return ele.value;
         } else {
-            console.log(`文章 ${this.id} Desc 元素 ${eleId} 不存在！`)
+            logger.info(`文章 ${this.id} Desc 元素 ${eleId} 不存在！`)
             return "";
         }
     }
@@ -199,7 +200,7 @@ class ArticleInfoFetcher {
             }
             return ts.join(',')
         } else {
-            console.log(`文章 ${this.id} Tags 元素 ${eleId} 不存在！`)
+            logger.info(`文章 ${this.id} Tags 元素 ${eleId} 不存在！`)
             return "";
         }
     }
@@ -211,7 +212,7 @@ class ArticleInfoFetcher {
         var articleTags = this.getArticleTags();
 
         if (paperId == null && articleTitle == null) {
-            console.log('论文ID和文章标题不能都为空！')
+            logger.info('论文ID和文章标题不能都为空！')
             return;
         }
 
@@ -255,7 +256,7 @@ function initMarkdownEditor(boxid, articleId) {
 
     var mdbox = document.getElementById(boxid)
     if (!mdbox) {
-        console.log('No box', boxid)
+        logger.info('No box', boxid)
         return
     }
 
@@ -335,7 +336,7 @@ function initMarkdownEditor(boxid, articleId) {
 
             var htmlView = document.getElementById(renderedId);
             if (!htmlView) {
-                console.log('No htmlview')
+                logger.info('No htmlview')
                 return
             }
             var sfpath = htmlView.getAttribute('sfpath')
@@ -374,7 +375,7 @@ function compareWithSoup(renderedId, preEl, newEl) {
     if (preOriginEle) {
         var preOldId = preOriginEle.id
         if (!newEl.id) {
-            console.log(`${newEl} has not ID!!!`)
+            logger.info(`${newEl} has not ID!!!`)
             return preOriginEle.isEqualNode(newEl)
         }
 
@@ -470,7 +471,7 @@ function renderIssued(articles) {
         'articles': articles
     }, (err, res) => {
         if (err) {
-            console.log(err)
+            logger.error(err)
             return
         }
         const element = document.getElementById('nav-issued-tabs')
@@ -496,7 +497,7 @@ function renderEditing(articles) {
         'articles': articles
     }, (err, res) => {
         if (err) {
-            console.log(err)
+            logger.error(err)
             return
         }
         const element = document.getElementById('nav-editing-tabs')
@@ -506,7 +507,7 @@ function renderEditing(articles) {
         'articles': articles
     }, (err, res) => {
         if (err) {
-            console.log(err)
+            logger.error(err)
             return
         }
         const element = document.getElementById('nav-editing-panels')
@@ -525,7 +526,7 @@ function addNewEditingTab(article) {
         'art': article
     }, (err, res) => {
         if (err) {
-            console.log(err)
+            logger.error(err)
             return
         }
         var ele = document.getElementById("id-editing-tab-list")
@@ -540,7 +541,7 @@ function addIssuedArticleTab(article) {
         'art': article
     }, (err, res) => {
         if (err) {
-            console.log(err)
+            logger.error(err)
             return
         }
 
@@ -555,12 +556,12 @@ function addNewEditingPanel(article, show = false) {
         'art': article
     }, (err, res) => {
         if (err) {
-            console.log(err)
+            logger.error(err)
             return
         }
         var ele = document.getElementById("id-editing-panel-list")
         if (!ele) {
-            console.log('编辑器panel列表未找到！')
+            logger.info('编辑器panel列表未找到！')
             return
         }
         ele.lastElementChild.insertAdjacentHTML('beforebegin', res)
@@ -578,7 +579,7 @@ function addIssuedArticlePanel(article, show = false) {
         'art': article
     }, (err, res) => {
         if (err) {
-            console.log(err)
+            logger.error(err)
             return
         }
         var ele = document.getElementById('id-issued-panel-list')
@@ -600,7 +601,7 @@ function addEditingToNew(article, show = false) {
 
 function addIssuedArticle(article, show = false) {
     if (issuedArticleSet.has(article.id)) {
-        console.warn(`article has been added: ${article.id}`)
+        logger.warn(`article has been added: ${article.id}`)
         if (show) { showIssuedDetailTab(article) }
         return
     }
@@ -639,7 +640,7 @@ function showEditingDetailTab(article) {
 function showIssuedDetailTab(article) {
     let ele = document.getElementById(`${ElementInfo.IssuedTabTrigger}${article.id}`)
     if (!ele) {
-        console.log(`issued detail tab not found: ${article.id}`)
+        logger.error(`issued detail tab not found: ${article.id}`)
         return false
     }
 
@@ -693,7 +694,7 @@ ipcRenderer.on('article:show-rendered', (event, article) => {
         return
     }
 
-    console.log(_("Element id not found, the article id is") + `: ${article.id}`)
+    logger.info(_("Element id not found, the article id is") + `: ${article.id}`)
 })
 
 function createArticle() {
@@ -717,7 +718,7 @@ function updateArticle(articleId) {
             editor.getValue()
         )
     } else {
-        console.log(`Article save failed, the article id is: ${articleId}`)
+        logger.info(`Article save failed, the article id is: ${articleId}`)
     }
 
     var info = art.fetchArticleInfo()
@@ -767,7 +768,7 @@ ipcRenderer.on('article:paper-title-reply', (event, paperId, articleId, title, i
         let env = getTemplateEnv()
         env.render(TEMPLATES_CONFIG['article-info-box'], { infos: [info] },
             (err, res) => {
-                if (err) console.error(err)
+                if (err) logger.error(err)
                 infoEle.innerHTML = res
             })
         setCheckIndicator(articleId, false)
@@ -782,7 +783,7 @@ function synArticleToCloud(articleId) {
 }
 
 ipcRenderer.on('article:syn-to-cloud-reply', (event, articleId, cloudInfo) => {
-    console.log('Create reply: ', articleId, cloudInfo)
+    logger.info('Create reply: ', articleId, cloudInfo)
 })
 
 function articleIssue(articleId) {
@@ -808,7 +809,7 @@ function showArticleInfo(localId, info) {
     let env = getTemplateEnv()
     env.render(TEMPLATES_CONFIG['article-info-box'], { infos: [info] },
         (err, res) => {
-            if (err) console.error(err)
+            if (err) logger.error(err)
             infoEle.innerHTML = res
         })
 }
@@ -863,7 +864,7 @@ ipcRenderer.on('article:check-paper-id-reply', (event, paperId, localId, title) 
 
     if (!title) {
         if (inputEle.hasAttribute('disabled')) {
-            console.log('移除 disabled')
+            logger.info('移除 disabled')
             inputEle.removeAttribute('disabled')
         }
         showArticleInfo(localId, _("Paper ID does not exist!"))
@@ -884,7 +885,7 @@ ipcRenderer.on('article:check-paper-id-reply', (event, paperId, localId, title) 
 function disableArticleIssuedBtn(articleId, disabled = true) {
     var issueBtn = document.getElementById(`${ElementInfo.ArticleIssuedButton}${articleId}`)
     if (!issueBtn) {
-        console.log('投稿按键不存在：', articleId)
+        logger.info('投稿按键不存在：', articleId)
         return
     }
 
@@ -898,7 +899,7 @@ function disableArticleIssuedBtn(articleId, disabled = true) {
 function updateArticleStatus(articleId, status) {
     var statusEle = document.getElementById(`${ElementInfo.ArticleStatus}${articleId}`)
     if (!statusEle) {
-        console.log('状态元素未找到：', articleId)
+        logger.info('状态元素未找到：', articleId)
         return
     }
 
@@ -907,7 +908,7 @@ function updateArticleStatus(articleId, status) {
 
 ipcRenderer.on('article:issue-article-reply', (event, localId, success, cloudInfo) => {
     if (!success) {
-        console.log('投稿失败: ', localId)
+        logger.error('投稿失败: ', localId)
         return
     }
 
@@ -968,7 +969,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     finishedIndexes.push(idx)
                 }
             } catch (err) {
-                console.log(`Task "${task}" execution error: ${err}`)
+                logger.error(`Task "${task}" execution error: ${err}`)
             }
         }
 
@@ -981,13 +982,13 @@ window.addEventListener('DOMContentLoaded', () => {
 ipcRenderer.on('article:content-reply', (event, localId, renderedId, content) => {
     var editor = articleEditors.get(localId)
     if (!editor) {
-        console.log(`ID ${localId} 无对应编辑器`)
+        logger.info(`ID ${localId} 无对应编辑器`)
         return
     }
     editor.getModel().setValue(content)
     var htmlView = document.getElementById(renderedId)
     if (!htmlView) {
-        console.log('No htmlview')
+        logger.info('No htmlview')
         return
     }
 
@@ -1063,7 +1064,7 @@ ipcRenderer.on('article:show-markdown-help', (event) => {
         mdContent: mdContent,
         filePath: fpath
     }
-    console.log(`add command line help for lang: ${lang}`)
+    logger.info(`add command line help for lang: ${lang}`)
     addIssuedArticle(article, true)
 })
 
