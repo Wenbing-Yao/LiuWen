@@ -21,13 +21,13 @@ let peClient = null
 
 const log = getLogger(__filename)
 
-function getPeClient(username = null) {
+function getPeClient(username = null, onLine = true) {
     if (username == null)
         username = settingStorage.getUsername()
 
-    if (!peClient) {
+    if (!peClient || onLine != peClient.onLine) {
         const { PaperExplainedClient } = require('./modules/Communication.js')
-        peClient = new PaperExplainedClient('articles', username)
+        peClient = new PaperExplainedClient('articles', username, onLine)
     }
     return peClient
 }
@@ -144,7 +144,7 @@ function configureLanguage() {
     addSupportedLanguage(supported_languages)
 }
 
-const createWindow = async() => {
+const createWindow = async () => {
     configureLanguage()
 
     if (!mainWindow) {
@@ -203,8 +203,8 @@ const createWindow = async() => {
         mainWindow.show();
         mainWindow.webContents.send('config:language', getLanguage())
         mainWindow.webContents.send('config:supported-languages', getSupportedLanguages())
-            // getFileFromUser();
-            // Open the DevTools.
+        // getFileFromUser();
+        // Open the DevTools.
         if (isDev) {
             log.debug('this is a development environment!', isDev)
             mainWindow.webContents.openDevTools();
@@ -276,7 +276,7 @@ ipcMain.on('article:create', (event, mdContent, articleInfo) => {
 
 ipcMain.on('article:render', (event, type) => {
     var peClient = getPeClient()
-    if (!peClient.isLogin) {
+    if (!peClient.isLogin && peClient.onLine) {
         event.reply('article:render-reply', type, [])
         return
     }
@@ -384,8 +384,8 @@ ipcMain.on('article:syn-to-cloud', (event, localId) => {
         var newInfo = store.getArticle(localId)
         if (newInfo.status != preInfo.status) {
             event.reply('article:check-status-changed', localId, newInfo.status)
-            event.reply('article:syn-to-cloud-reply', localId, cloudInfo)
         }
+        event.reply('article:syn-to-cloud-reply', localId, cloudInfo)
     })
 })
 
@@ -394,14 +394,17 @@ ipcMain.on('article:issue-article', (event, localId) => {
     var cloudInfo = {
         'status': '已提交'
     }
-    client.articleSubmitCensor().then(info => {
-        if (info.status == '已提交') {
-            cloudInfo.status = info.status
-            event.reply('article:issue-article-reply', localId, true, cloudInfo)
-        } else {
-            event.reply('article:issue-article-reply', localId, false)
-        }
-    })
+    let sc = client.articleSubmitCensor()
+    if (sc) {
+        sc.then(info => {
+            if (info.status == '已提交') {
+                cloudInfo.status = info.status
+                event.reply('article:issue-article-reply', localId, true, cloudInfo)
+            } else {
+                event.reply('article:issue-article-reply', localId, false)
+            }
+        })
+    }
 })
 
 ipcMain.on('article:delete', (event, localId, deleteCloud, deleteFile) => {
@@ -612,6 +615,7 @@ ipcMain.on('profile:logout', (event) => {
     peClient = getPeClient()
     peClient.get('logout',
         res => {
+            settingStorage.setUsername(null)
             closeUserinfoModal()
             mainWindow.webContents.send('profile:logout-success')
         },
@@ -622,16 +626,25 @@ ipcMain.on('profile:login-cancel', (event) => {
     closeLoginModal()
 })
 
-ipcMain.on('profile:login-check', (event) => {
+ipcMain.on('profile:login-check', (event, onLine) => {
     var username = settingStorage.getUsername()
-    peClient = getPeClient(username)
+    peClient = getPeClient(username, onLine)
     if (!peClient) {
         const { PaperExplainedClient } = require('./modules/Communication.js')
         peClient = new PaperExplainedClient('articles', username)
     }
-    peClient.amILogin((isLogin) => {
-        event.reply('profile:login-check-reply', isLogin, username)
-    })
+
+    if (onLine) {
+        peClient.amILogin((isLogin) => {
+            event.reply('profile:login-check-reply', isLogin, username)
+        }, (error) => {
+            log.error(`Unknown error: ${error}`)
+            event.reply('profile:login-check-reply', false, username)
+        })
+    } else {
+        // If offline now, allow the user's operation
+        event.reply('profile:login-check-reply', false, username)
+    }
 })
 
 ipcMain.on('profile:login-submit', (event, username, password) => {

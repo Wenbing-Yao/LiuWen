@@ -81,5 +81,7 @@
     "Tips:": "Tips:",
     "Submitted": "Submitted",
     "Rows": "Rows",
-    "Columns": "Columns"
+    "Columns": "Columns",
+    "The paper ID and title fields cannot both be empty!": "",
+    "No Title": ""
 }

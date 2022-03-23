@@ -36,6 +36,7 @@ const ElementInfo = {
     CheckOkIndicatorPrefix: "meta-ok-",
     CheckNOkIndicatorPrefix: "meta-nok-",
     ArticleIssuedButton: "article-issue-",
+    ArticleSyncButton: "art-syn-to-cloud-",
     ArticleStatus: "article-status-",
     EditingTab: "editing-tab-",
     EditingTabTrigger: "editing-detail-tab-",
@@ -260,7 +261,7 @@ function initMarkdownEditor(boxid, articleId) {
         return
     }
 
-    amdRequire(['vs/editor/editor.main'], async function() {
+    amdRequire(['vs/editor/editor.main'], async function () {
         monaco.editor.defineTheme('default-theme', {
             base: 'vs-dark',
             inherit: true,
@@ -309,7 +310,7 @@ function initMarkdownEditor(boxid, articleId) {
         editor.getModel().onDidChangeContent((event) => {
             setEditorEditing(articleId)
         })
-        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S, () => {
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S, async () => {
             setModify(mdbox, false)
 
             if (!articleId) {
@@ -533,7 +534,6 @@ function addNewEditingTab(article) {
         ele.lastElementChild.insertAdjacentHTML('beforebegin', res);
     })
 }
-
 
 function addIssuedArticleTab(article) {
     let env = getTemplateEnv()
@@ -779,11 +779,27 @@ ipcRenderer.on('article:paper-title-reply', (event, paperId, articleId, title, i
 })
 
 function synArticleToCloud(articleId) {
+    var art = new ArticleInfoFetcher(articleId)
+    let info = art.fetchArticleInfo()
+    if (!info.tags) {
+        showArticleInfo(articleId, _("Tags field is required!"))
+        return
+    } else {
+        showArticleInfo(articleId, null)
+    }
+
+    if (!info.paperId && !info.title) {
+        showArticleInfo(articleId, _("The paper ID and title fields cannot both be empty!"))
+        return
+    } else {
+        showArticleInfo(articleId, null)
+    }
     ipcRenderer.send('article:syn-to-cloud', articleId)
+    disableArticleSyncBtn(articleId)
 }
 
 ipcRenderer.on('article:syn-to-cloud-reply', (event, articleId, cloudInfo) => {
-    logger.info('Create reply: ', articleId, cloudInfo)
+    disableArticleSyncBtn(articleId, false)
 })
 
 function articleIssue(articleId) {
@@ -827,6 +843,9 @@ function articleMetaChange(localId, fieldType, value) {
         var titleEle = document.getElementById(`${TitleSelectorPrefix}${localId}`)
         titleEle.innerText = value
         return
+    } else if (fieldType == 'title') {
+        var titleEle = document.getElementById(`${TitleSelectorPrefix}${localId}`)
+        titleEle.innerText = _('No Title')
     }
 
     if (fieldType == 'tags') {
@@ -881,6 +900,21 @@ ipcRenderer.on('article:check-paper-id-reply', (event, paperId, localId, title) 
     }
     showArticleInfo(localId, "")
 })
+
+function disableArticleSyncBtn(articleId, disabled = true) {
+
+    var issueBtn = document.getElementById(`${ElementInfo.ArticleSyncButton}${articleId}`)
+    if (!issueBtn) {
+        logger.info('同步按键不存在：', articleId)
+        return
+    }
+
+    if (disabled) {
+        issueBtn.setAttribute('disabled', 'disabled')
+    } else {
+        issueBtn.removeAttribute('disabled')
+    }
+}
 
 function disableArticleIssuedBtn(articleId, disabled = true) {
     var issueBtn = document.getElementById(`${ElementInfo.ArticleIssuedButton}${articleId}`)
@@ -956,7 +990,11 @@ function showUserinfo() {
 
 window.addEventListener('DOMContentLoaded', () => {
     // renderIssued(indexContext['articleInfo']['issued'])
-    ipcRenderer.send('profile:login-check')
+    if (navigator.onLine) {
+        ipcRenderer.send('profile:login-check', true)
+    } else {
+        ipcRenderer.send('profile:login-check', false)
+    }
 
     setInterval(() => {
         // run tasks
@@ -985,36 +1023,46 @@ ipcRenderer.on('article:content-reply', (event, localId, renderedId, content) =>
         logger.info(`ID ${localId} 无对应编辑器`)
         return
     }
-    editor.getModel().setValue(content)
-    var htmlView = document.getElementById(renderedId)
-    if (!htmlView) {
-        logger.info('No htmlview')
-        return
-    }
 
-    var sfpath = htmlView.getAttribute('sfpath')
-    var md = new Markdown(path.dirname(sfpath))
-    var notoc = true
-    var innerHTML = md.convert(content, notoc, true)
-    htmlView.innerHTML = innerHTML
+    new Promise((resolve, reject) => { editor.getModel().setValue(content) }).then(
+        (value) => { }
+    ).catch((reason) => logger.error(reason))
 
-    document.querySelectorAll(`#${renderedId} pre code`).forEach((el) => {
-        hljs = require('../node_modules/highlight.js')
-        hljs.highlightElement(el)
-    });
+    new Promise((resolve, reject) => {
+        var htmlView = document.getElementById(renderedId)
+        if (!htmlView) {
+            logger.info('No htmlview')
+            return
+        }
 
-    var buf = new Map()
-    htmlOriginBuf.set(renderedId, buf)
+        var sfpath = htmlView.getAttribute('sfpath')
+        var md = new Markdown(path.dirname(sfpath))
+        var notoc = true
+        var innerHTML = md.convert(content, notoc, true)
+        htmlView.innerHTML = innerHTML
 
-    var newCopy = document.createElement('div')
-    newCopy.innerHTML = innerHTML
-    for (let ele of newCopy.children) {
-        buf.set(ele.id, ele)
-    }
+        document.querySelectorAll(`#${renderedId} pre code`).forEach((el) => {
+            hljs = require('../node_modules/highlight.js')
+            hljs.highlightElement(el)
+        });
 
-    setEditorSaved(localId)
+        var buf = new Map()
+        htmlOriginBuf.set(renderedId, buf)
+
+        var newCopy = document.createElement('div')
+        newCopy.innerHTML = innerHTML
+        for (let ele of newCopy.children) {
+            buf.set(ele.id, ele)
+        }
+
+        setEditorSaved(localId)
+        resolve(localId)
+    }).then((value) => {
+        logger.info(`init render success: ${value}`)
+    }).catch((reason) => {
+        logger.error(`An error happened: ${reason}`)
+    })
 })
-
 
 ipcRenderer.on('article:render-reply', (event, type, articles) => {
     var articleArray = []
@@ -1097,11 +1145,12 @@ function setWinLogout() {
 }
 
 ipcRenderer.on('profile:login-check-reply', (event, isLogin, username) => {
-    if (!isLogin) {
+    if (!isLogin && navigator.onLine || !username) {
         showLogin()
         return
     }
 
+    // If offline, allow the user using
     setWinLogin(username)
     ipcRenderer.send('article:render', 'editing')
     ipcRenderer.send('article:render', 'issued')

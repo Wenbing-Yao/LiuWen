@@ -6,7 +6,7 @@
                     <input id="id-article-{{ art.id }}-paper-id" class="form-control dark shadow-none border-radius-none artinput" field-type="paperId" placeholder="{{'Paper ID'|trans}}" value="{{ art.paperId }}" artid="{{art.id}}">
                 </div>
                 <div class="title pb-2">
-                    <input id="id-article-{{ art.id }}-title" class="form-control dark shadow-none border-radius-none artinput" field-type="title" placeholder="{{'Title'|trans}}" {% if art.paperIdValid %} value="{{ art.paperTitle}}" disabled {% else %} value="{{ art.title }}"
+                    <input id="id-article-{{ art.id }}-title" class="form-control dark shadow-none border-radius-none artinput" field-type="title" placeholder="{{'Title'|trans}}" {% if art.paperIdValid %} value="{{ art.paperTitle }}" disabled {% else %} value="{{ art.title }}"
                         {% endif %} artid="{{art.id}}">
                 </div>
                 <div class="desc pb-2">

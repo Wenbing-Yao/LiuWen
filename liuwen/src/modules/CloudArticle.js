@@ -20,10 +20,9 @@ function fileExists(fpath) {
         accessSync(fpath.trim(), constants.F_OK)
         return true
     } catch (err) {
-        logger.error('file exists error:', fpath)
-        logger.error(err)
+        return false
     }
-    return false
+
 }
 
 
@@ -86,14 +85,30 @@ class CloudArticle {
         return this.client.download(url, odir, success, error)
     }
 
+    isValidHttpUrl(string) {
+        let url;
+
+        try {
+            url = new URL(string);
+        } catch (_) {
+            return false;
+        }
+
+        return url.protocol === "http:" || url.protocol === "https:";
+    }
+
     prepareImage(source, workon, success, error) {
         source = decodeURI(source)
         source = source.replaceAll("&#32;", " ")
         if (fileExists(source)) {
             return this.uploadImage(source, true, success, error)
         } else {
-            logger.info('文件不存在本地！', source)
+            if (!this.isValidHttpUrl(source)) {
+                logger.info('文件不存在本地！且不是一个有效的 http URL', source)
+                return source
+            }
         }
+
         var fpath = path.join(workon, path.basename(source))
         if (fileExists(fpath)) {
             return this.uploadImage(fpath, true, success, error)

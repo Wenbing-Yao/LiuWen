@@ -135,6 +135,10 @@ main {
     height: 100%;
 }
 
+.article em {
+    margin-right: 0.15em;
+}
+
 .article-list-item {
     font-size: 14px;
     border-radius: 0px;

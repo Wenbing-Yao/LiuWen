@@ -228,7 +228,6 @@ class AccountConfig {
 }
 
 const URLS = {
-    // 'domain': 'http://www.paperexplained.com',
     'domain': 'https://paperexplained.cn',
     'dev-domain': 'http://www.paperexplained.com',
     'urls': {

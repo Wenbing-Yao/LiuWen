@@ -273,7 +273,11 @@ class Markdown {
             }
 
             var img = fig.find('img')
-            if (!img || !img.attrs || !img.attrs.src || !img.attrs.src.startsWith('.')) continue
+            if (!img || !img.attrs || !img.attrs.src
+                // || !img.attrs.src.startsWith('.')
+                || img.attrs.src.startsWith('http://')
+                || img.attrs.src.startsWith('https://')
+                || img.attrs.src.startsWith('/')) continue
 
             img.attrs.src = path.join(this.relDir, img.attrs.src)
         }
@@ -301,9 +305,9 @@ class Markdown {
             allHeaders.push({
                 id: h.attrs.id,
                 level: parseInt(h.attrs.level),
-                title: h.string.toString()
+                title: h.string ? h.string.toString() : h.contents.toString()
             })
-            var node = new ToCNode(h.attrs.id, h.string.toString(), parseInt(h.attrs.level), [], null)
+            var node = new ToCNode(h.attrs.id, h.string ? h.string.toString() : h.contents.join(""), parseInt(h.attrs.level), [], null)
             if (this.dirRoot == null) {
                 this.dirRoot = node
             } else {

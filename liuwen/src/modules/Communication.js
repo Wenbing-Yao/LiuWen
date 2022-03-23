@@ -31,7 +31,7 @@ function parseSetCookie(cookieStr) {
     return cookies
 }
 
-String.prototype.format = function() {
+String.prototype.format = function () {
     a = this;
     for (k in arguments[0]) {
         a = a.replace("{" + k + "}", arguments[0][k])
@@ -52,27 +52,34 @@ function buildUrlConfs(appName, urls) {
 }
 
 function camelCase(input) {
-    return input.toLowerCase().replace(/-(.)/g, function(match, group1) {
+    return input.toLowerCase().replace(/-(.)/g, function (match, group1) {
         return group1.toUpperCase();
     });
 }
 
 class PaperExplainedClient {
 
-    constructor(appName, username) {
+    constructor(appName, username, onLine = true) {
         this.appName = appName
         this.username = username
+        this.onLine = onLine
         this.domain = URLS.domain
         this.funcs = {}
         this.funcPaths = {}
-            // this.peSession = session.fromPartition(`persist:${webClientSessionName}`)
+        // this.peSession = session.fromPartition(`persist:${webClientSessionName}`)
         this.cs = this.getCookieString()
         if (!this.cs || !this.cs.includes('csrftoken')) {
             this.initCsrftokenString()
         }
         this.loadUrlConfig('accounts')
         this.loadUrlConfig(appName)
-        this.amILogin()
+
+        if (this.onLine) {
+            this.amILogin()
+        } else {
+            this.isLogin = false
+            logger.info(`You are not online, skip login check!`)
+        }
     }
 
     loadUrlConfig(appName) {
@@ -191,46 +198,57 @@ class PaperExplainedClient {
 
     ajaxGet(path, success, error) {
         var url = `${baseUrl}/${path}`
+        console.log(`Get url: ${url}`)
+
         return fetch(url, {
             method: 'get',
             headers: {
                 "X-Requested-With": "XMLHttpRequest",
                 'Cookie': this.cs
             }
-        }).then(res => {
-            if (res.status < 400) {
-                return res.text().then(txt => {
-                    var info = txt
-                    try {
-                        var json = JSON.parse(txt)
-                        info = json["info"]
-                    } catch (err) {}
-
-                    if (success) {
-                        success(info)
-                    } else {
-                        logger.info('ajax get success, url:', url)
-                    }
-                    return info
-                })
-            } else {
-                return res.text().then(txt => {
-                    var info = txt
-                    try {
-                        var json = JSON.parse(txt)
-                        info = json["info"]
-                    } catch (err) {}
-
-                    if (error) {
-                        error(info)
-                    } else {
-                        console.error('ajax get failed, url:', url, ' error:', info)
-                    }
-
-                    return info
-                })
-            }
         })
+            .then(res => {
+                if (res.status < 400) {
+                    return res.text().then(txt => {
+                        var info = txt
+                        try {
+                            var json = JSON.parse(txt)
+                            info = json["info"]
+                        } catch (err) { }
+
+                        if (success) {
+                            success(info)
+                        } else {
+                            logger.info('ajax get success, url:', url)
+                        }
+                        return info
+                    })
+                } else {
+                    return res.text().then(txt => {
+                        var info = txt
+                        try {
+                            var json = JSON.parse(txt)
+                            info = json["info"]
+                        } catch (err) { }
+
+                        if (error) {
+                            error(info)
+                        } else {
+                            console.error('ajax get failed, url:', url, ' error:', info)
+                        }
+
+                        return info
+                    })
+                }
+            })
+            .catch((err) => {
+                if (error) {
+                    error(err)
+                } else {
+                    logger.error(`Get url ${url} failed! Error info: ${err.message}`)
+                }
+                return {}
+            })
     }
 
     setCookie(cookies) {
@@ -296,10 +314,14 @@ class PaperExplainedClient {
     ajaxPost(path, data, files, success, error, storeCookie) {
         var url = `${baseUrl}/${path}`
 
+        console.log(`Post url: ${url}`)
+
         var onlyPost = () => {
             const form = new FormData()
 
-            form.append('csrfmiddlewaretoken', this.csrftoken)
+            if (this.csrftoken)
+                form.append('csrfmiddlewaretoken', this.csrftoken)
+
             for (let k in data) {
                 form.append(k, data[k])
             }
@@ -316,6 +338,7 @@ class PaperExplainedClient {
                     'Cookie': this.cs
                 }
             }).then(res => {
+                console.log(res)
                 if (res.status < 400) {
                     return res.json().then(json => {
                         if (storeCookie) {
@@ -334,7 +357,7 @@ class PaperExplainedClient {
                         try {
                             var json = JSON.parse(txt)
                             info = json["info"]
-                        } catch (err) {}
+                        } catch (err) { }
 
                         if (error) {
                             error(info)

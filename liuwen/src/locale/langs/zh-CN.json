@@ -81,5 +81,7 @@
     "Tips:": "提示：",
     "Submitted": "已提交",
     "Rows": "行",
-    "Columns": "列"
+    "Columns": "列",
+    "The paper ID and title fields cannot both be empty!": "论文ID和标题不能同时为空!",
+    "No Title": "无标题"
 }

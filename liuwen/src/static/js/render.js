@@ -13,7 +13,7 @@ const SAVE_BASIC_ROLE_ADD = "creation";
 var globalMDEditors = new Map();
 var displayBuffer = new Map();
 
-window.addEventListener("load", function() {
+window.addEventListener("load", function () {
     // var addEle = document.getElementById('issued-detail-tab-add');
     // if (addEle) {
     //     addEle.addEventListener('click', async() => {
@@ -242,13 +242,13 @@ $(() => {
         }
     })
 
-    $('[data-bs-toggle=tooltip]').each(function(index) {
+    $('[data-bs-toggle=tooltip]').each(function (index) {
         let ele = document.getElementById($(this).attr('id'))
         let tooltip = bootstrap.Tooltip.getOrCreateInstance(ele)
         tooltip.enable()
     })
 
-    $(document).on('click', 'a[href^="http"]', function(event) {
+    $(document).on('click', 'a[href^="http"]', function (event) {
         event.preventDefault();
         window.default.openExternalLink(this.href);
     });
@@ -298,7 +298,7 @@ $(() => {
         // var remainingWidth = navEditingPanelDivWidth - tabPanelPaddingWidth - navEditingTabWidth
         // $("#nav-editing-panels").css("width", remainingWidth)
     }
-    $(window).on('resize', function() {
+    $(window).on('resize', function () {
         resizeContentWindow()
     })
     resizeContentWindow()
