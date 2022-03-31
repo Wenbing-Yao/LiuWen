@@ -83,5 +83,11 @@
     "Rows": "Rows",
     "Columns": "Columns",
     "The paper ID and title fields cannot both be empty!": "",
-    "No Title": ""
+    "No Title": "",
+    "Selection Question": "",
+    "Code Execution Question": "",
+    "Simple Question": "",
+    "图": "",
+    "：": "",
+    "Submit To Playground": ""
 }

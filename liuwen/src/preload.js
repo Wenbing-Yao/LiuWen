@@ -206,11 +206,28 @@ class ArticleInfoFetcher {
         }
     }
 
+
+    getArticleToPlayground() {
+        var eleId = null;
+        if (!this.id) {
+            return false
+        }
+        eleId = `id-article-${this.id}-playground`;
+        var ele = document.getElementById(eleId);
+        if (ele) {
+            return ele.checked;
+        } else {
+            logger.info(`文章 ${this.id} playground 元素 ${eleId} 不存在！`)
+            return false;
+        }
+    }
+
     fetchArticleInfo() {
         var paperId = this.getArticlePaperId();
         var articleTitle = this.getArticleTitle();
         var articleDesc = this.getArticleDesc();
         var articleTags = this.getArticleTags();
+        var articleToPlayground = this.getArticleToPlayground();
 
         if (paperId == null && articleTitle == null) {
             logger.info('论文ID和文章标题不能都为空！')
@@ -221,6 +238,7 @@ class ArticleInfoFetcher {
         this.detail['title'] = articleTitle;
         this.detail['desc'] = articleDesc;
         this.detail['tags'] = articleTags;
+        this.detail['playground'] = articleToPlayground;
 
         return this.detail;
     }
@@ -354,8 +372,19 @@ function initMarkdownEditor(boxid, articleId) {
             newEle.innerHTML = innerHtml
             smartUpdate(htmlView, newEle, renderedId)
             document.querySelectorAll(`#${renderedId} pre code`).forEach((el) => {
+                let lang = null
+                let prefix = 'language-'
+                for (let cs of el.classList) {
+                    if (cs.startsWith(prefix)) {
+                        lang = cs.substring(prefix.length)
+                    }
+                }
+                if (!lang) {
+                    lang = 'text'
+                }
+
                 hljs = require('../node_modules/highlight.js')
-                hljs.highlightElement(el)
+                el.innerHTML = hljs.highlight(el.innerText, { language: lang }).value
             });
 
             var buf = new Map()
@@ -800,6 +829,7 @@ function synArticleToCloud(articleId) {
 
 ipcRenderer.on('article:syn-to-cloud-reply', (event, articleId, cloudInfo) => {
     disableArticleSyncBtn(articleId, false)
+    disableSubmitToPlayground(articleId, true)
 })
 
 function articleIssue(articleId) {
@@ -904,6 +934,21 @@ ipcRenderer.on('article:check-paper-id-reply', (event, paperId, localId, title) 
 function disableArticleSyncBtn(articleId, disabled = true) {
 
     var issueBtn = document.getElementById(`${ElementInfo.ArticleSyncButton}${articleId}`)
+    if (!issueBtn) {
+        logger.info('同步按键不存在：', articleId)
+        return
+    }
+
+    if (disabled) {
+        issueBtn.setAttribute('disabled', 'disabled')
+    } else {
+        issueBtn.removeAttribute('disabled')
+    }
+}
+
+function disableSubmitToPlayground(articleId, disabled = true) {
+
+    var issueBtn = document.getElementById(`id-article-${articleId}-playground`)
     if (!issueBtn) {
         logger.info('同步按键不存在：', articleId)
         return
@@ -1103,8 +1148,16 @@ ipcRenderer.on('article:add-issued', (event, article) => {
 
 ipcRenderer.on('article:show-markdown-help', (event) => {
     var lang = getLanguage()
-    var fpath = path.join(__dirname, `docs/markdown-help.${lang}.md`)
-    var mdContent = readFileSync(fpath).toString()
+    var fpath = null
+    var mdContent = null
+    try {
+        fpath = path.join(__dirname, `docs/markdown-help.${lang}.md`)
+        mdContent = readFileSync(fpath).toString()
+    } catch (error) {
+        fpath = path.join(__dirname, `docs/markdown-help.en.md`)
+        mdContent = readFileSync(fpath).toString()
+    }
+
     var article = {
         id: 'local-id-markdown-help',
         title: _('Markdown Help'),

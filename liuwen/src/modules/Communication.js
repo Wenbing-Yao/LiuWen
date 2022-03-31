@@ -120,7 +120,14 @@ class PaperExplainedClient {
 
     get(fname, success, error, urlParams) {
         if (!error) {
-            error = err => logger.error(`Get error: ${err}`)
+            error = err => {
+                try {
+                    logger.error(`post error: ${err.toString()}`)
+                }
+                catch (exc) {
+                    logger.error(`post error: ${err.toString()}`)
+                }
+            }
         }
 
         if (!this[fname]) {
@@ -135,7 +142,12 @@ class PaperExplainedClient {
 
         if (!error) {
             error = err => {
-                logger.error(`post error: ${err}`)
+                try {
+                    logger.error(`post error: ${err.toString()}`)
+                }
+                catch (exc) {
+                    logger.error(`post error: ${err.toString()}`)
+                }
             }
 
         }
@@ -198,7 +210,7 @@ class PaperExplainedClient {
 
     ajaxGet(path, success, error) {
         var url = `${baseUrl}/${path}`
-        console.log(`Get url: ${url}`)
+        logger.info(`Get url: ${url}`)
 
         return fetch(url, {
             method: 'get',
@@ -231,6 +243,9 @@ class PaperExplainedClient {
                             info = json["info"]
                         } catch (err) { }
 
+                        if (isDev) {
+                            console.log(info)
+                        }
                         if (error) {
                             error(info)
                         } else {
@@ -242,6 +257,9 @@ class PaperExplainedClient {
                 }
             })
             .catch((err) => {
+                if (isDev) {
+                    console.log(err)
+                }
                 if (error) {
                     error(err)
                 } else {
@@ -314,7 +332,7 @@ class PaperExplainedClient {
     ajaxPost(path, data, files, success, error, storeCookie) {
         var url = `${baseUrl}/${path}`
 
-        console.log(`Post url: ${url}`)
+        logger.info(`Post url: ${url}`)
 
         var onlyPost = () => {
             const form = new FormData()
@@ -338,7 +356,7 @@ class PaperExplainedClient {
                     'Cookie': this.cs
                 }
             }).then(res => {
-                console.log(res)
+                logger.info(res)
                 if (res.status < 400) {
                     return res.json().then(json => {
                         if (storeCookie) {
@@ -358,6 +376,10 @@ class PaperExplainedClient {
                             var json = JSON.parse(txt)
                             info = json["info"]
                         } catch (err) { }
+
+                        if (isDev) {
+                            console.log(info)
+                        }
 
                         if (error) {
                             error(info)

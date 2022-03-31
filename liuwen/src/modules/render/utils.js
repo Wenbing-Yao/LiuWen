@@ -12,7 +12,6 @@ function getLogger(filename) {
     const log = electronLog.create(filename)
 
     let prefix = isDev ? 'dev' : 'prod'
-    console.log(log.transports.file.fileName)
     log.transports.file.fileName = `${prefix}-${log.transports.file.fileName}`
     log.transports.console.level = isDev ? true : false
 

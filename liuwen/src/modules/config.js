@@ -252,7 +252,10 @@ const URLS = {
             },
             'POST': {
                 'ia-fetch': 'iarticle/fetch/',
+                'ia-fresh': 'iarticle/fresh/{iarticle_id}/',
                 'ia-create': 'iarticle/create/',
+                'ia-detail-create': 'iarticle/detail-create/',
+                'ia-detail-update': 'iarticle/detail-update/{iarticle_id}/',
                 'ia-update': 'iarticle/update/{article_id}/',
                 'ia-author-list': 'iarticle/author-list/',
                 'gia-create': 'giarticle/create/',

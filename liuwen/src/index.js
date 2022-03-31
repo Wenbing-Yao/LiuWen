@@ -380,12 +380,19 @@ ipcMain.on('article:syn-to-cloud', (event, localId) => {
     var client = getArticleClient(localId)
     var store = getStorage()
     var preInfo = store.getArticle(localId)
+
     client.syncToCloud(info => {
         var newInfo = store.getArticle(localId)
         if (newInfo.status != preInfo.status) {
             event.reply('article:check-status-changed', localId, newInfo.status)
         }
         event.reply('article:syn-to-cloud-reply', localId, cloudInfo)
+    }, (err) => {
+        if (isDev) {
+            console.log(err)
+        }
+        log.error(`sync to cloud error: ${err}`)
+        event.reply('article:syn-to-cloud-reply', localId, null)
     })
 })
 

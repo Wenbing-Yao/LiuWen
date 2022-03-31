@@ -83,5 +83,12 @@
     "Rows": "行",
     "Columns": "列",
     "The paper ID and title fields cannot both be empty!": "论文ID和标题不能同时为空!",
-    "No Title": "无标题"
+    "No Title": "无标题",
+    "Selection Question": "选择题",
+    "Code Execution Question": "代码执行问答",
+    "Simple Question": "简答题",
+    "图": "",
+    "Figure": "图",
+    "：": ": ",
+    "Submit To Playground": "提交到演练场"
 }

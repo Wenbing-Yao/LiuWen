@@ -11,6 +11,7 @@ const { Markdown } = require('./LiuwenMarkDown')
 const { WORK_BASE } = require('./config')
 const { trans: _ } = require('../locale/i18n')
 const { getLogger } = require('../modules/render/utils')
+const { IAEncoder } = require('./IAComponent')
 
 const logger = getLogger(__filename)
 
@@ -22,7 +23,6 @@ function fileExists(fpath) {
     } catch (err) {
         return false
     }
-
 }
 
 
@@ -42,17 +42,18 @@ class CloudArticle {
         this.localId = localId
         this.username = username
         this.client = new PaperExplainedClient('articles', username)
+        this.iclient = new PaperExplainedClient('aplayground', username)
         this.store = getStorage(username)
         this.workon = WORK_BASE
     }
 
-    md2html(fpath) {
+    md2html(fpath, notoc = false, numberFigure = true, addids = true) {
         var raw = readFileSync(fpath)
         var markdown = new Markdown(path.dirname(fpath))
         let markdownContent = raw.toString()
         return {
             md: markdownContent,
-            html: markdown.convert(markdownContent, false, true)
+            html: markdown.convert(markdownContent, notoc, numberFigure, addids)
         }
     }
 
@@ -429,8 +430,125 @@ class CloudArticle {
             err => logger.error(`文章投稿失败：${err}`))
     }
 
-    syncToCloud(success) {
+    updateIArticle(artInfo, success, error = null) {
+        let tags = artInfo.tags
+        let paperId = artInfo.paperId
+        let desc = artInfo.desc
+        let fpath = artInfo.filePath
+        let title = artInfo.title
+        let cloudId = artInfo.cloudId
+
+        if (typeof tags != "string") {
+            tags = tags.join(',')
+        }
+
+        let md = null
+        let html = null
+
+        if (fpath.endsWith('md')) {
+            var info = this.md2html(fpath, true)
+            md = info.md
+            html = info.html
+        } else {
+            html = readFileSync(fpath)
+        }
+
+        this.uploadAndReplaceImage(html, paperId || title, !paperId, fpath, (content, urlMap) => {
+            let artInfo = {
+                paper: paperId,
+                special_title: title,
+                tags: tags,
+                desc: desc
+            }
+            if (md) {
+                if (urlMap) {
+                    md = this.replaceImageUrls(md, urlMap)
+                }
+                artInfo.markdown_content = md
+            }
+
+            var soup = new JSSoup(content)
+            this.iclient.post('iaDetailUpdate', artInfo, null, (info) => {
+                this.store.updateArticle(this.localId, {
+                    cloudId: info.iarticle_id,
+                    url: info.url,
+                    paperTitle: info.paper_title,
+                    synced: true
+                })
+
+                let encoder = new IAEncoder(soup)
+                this.iclient.post('iaFresh', {
+                    content: JSON.stringify(encoder.encode())
+                }, null, success, error, { 'iarticle_id': info.iarticle_id })
+            }, error, { 'iarticle_id': cloudId })
+        })
+    }
+
+    createIArticle(artInfo, success, error = null) {
+        let tags = artInfo.tags
+        let paperId = artInfo.paperId
+        let desc = artInfo.desc
+        let fpath = artInfo.filePath
+        let title = artInfo.title
+
+        if (typeof tags != "string") {
+            tags = tags.join(',')
+        }
+
+        let md = null
+        let html = null
+
+        if (fpath.endsWith('md')) {
+            var info = this.md2html(fpath, true)
+            md = info.md
+            html = info.html
+        } else {
+            html = readFileSync(fpath)
+        }
+
+        this.uploadAndReplaceImage(html, paperId || title, !paperId, fpath, (content, urlMap) => {
+            let artInfo = {
+                paper: paperId,
+                special_title: title,
+                tags: tags,
+                desc: desc
+            }
+            if (md) {
+                if (urlMap) {
+                    md = this.replaceImageUrls(md, urlMap)
+                }
+                artInfo.markdown_content = md
+            }
+
+            var soup = new JSSoup(content)
+            this.iclient.post('iaDetailCreate', artInfo, null, (info) => {
+                this.store.updateArticle(this.localId, {
+                    cloudId: info.iarticle_id,
+                    url: info.url,
+                    paperTitle: info.paper_title,
+                    synced: true
+                })
+
+                let encoder = new IAEncoder(soup)
+                this.iclient.post('iaFresh', {
+                    content: JSON.stringify(encoder.encode())
+                }, null, success, error, { 'iarticle_id': info.iarticle_id })
+            }, error)
+        })
+    }
+
+    syncIArticleToCloud(artInfo, success, error = null) {
+        if (artInfo.cloudId) {
+            return this.updateIArticle(artInfo, success, error)
+        }
+        return this.createIArticle(artInfo, success, error)
+    }
+
+    syncToCloud(success, error = null) {
         var artInfo = this.store.getArticle(this.localId)
+        if (artInfo.playground) {
+            return this.syncIArticleToCloud(artInfo, success, error)
+        }
         if (artInfo.paperId) {
             this.paperTitle(artInfo.paperId,
                 (info) => {

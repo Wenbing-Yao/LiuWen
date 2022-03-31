@@ -1,0 +1,13 @@
+{% if qa and qa.qtype=='SIMPLE' %}
+<div class="qa qa-simple shadow my-3" style="border: 1px solid green">
+    <div class="w-100 py-1 px-3 d-flex justify-content-start align-items-center"
+        style="background-color: rgb(0, 0, 100); font-size: 12px;">{{ 'Simple Question'|trans }}</div>
+    <div class="description px-3 pt-3">
+        {{ qa.question }}
+    </div>
+    <hr>
+    <div class="answer px-3 pb-3" style="color:lightgreen">
+        {{ qa.answer }}
+    </div>
+</div>
+{% endif %}

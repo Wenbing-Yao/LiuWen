@@ -90,7 +90,6 @@ class ArticleStorage {
         var reverseDict = this.readJsonFile(this.articleReverseFinderPath)
         reverseDict[fpath] = localId
         writeFileSync(this.articleReverseFinderPath, JSON.stringify(reverseDict))
-
     }
 
     buildArticleReversePathFinder() {
@@ -243,7 +242,7 @@ class ArticleStorage {
 
         try {
             data = JSON.parse(readFileSync(fpath))
-        } catch (err) {}
+        } catch (err) { }
 
         return data
     }

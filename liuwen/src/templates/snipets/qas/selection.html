@@ -1,0 +1,14 @@
+{% if qa and qa.qtype=='SELECTION' %}
+<div class="qa qa-selection shadow my-3" style="border: 1px solid green;">
+    <div  class="w-100 py-1 px-3 d-flex justify-content-start align-items-center" style="background-color: rgb(0, 100, 0); font-size: 12px;">{{ 'Selection Question'|trans }}</div>
+    <div class="description px-3 pt-3">
+        {{ qa.question }}
+    </div>
+    <hr>
+    <div class="answer px-3 pb-3">
+        <ul class="list-group" style="overflow:hidden; text-overflow:ellipsis; word-break:break-word;">{% for choice in qa.answer %}
+            <li class="list-group-item bg-dark d-flex" {% if choice.is_correct == 'Y' %} is-correct="true" style="color: greenyellow;" {% else %} is-correct="false" style="color:red" {% endif %}>{{ choice.desc }}</li>{% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}

@@ -1,0 +1,13 @@
+{% if qa and qa.qtype=='CODE_EXECUTION' %}
+<div class="qa qa-code-execution shadow my-3" style="border: 1px solid green">
+    <div class="w-100 py-1 px-3 d-flex justify-content-between align-items-center"
+        style="background-color: rgb(100, 0, 0); font-size: 12px;">{{ 'Code Execution Question'|trans }}</div>
+    <div class="description px-3 pt-3">
+        {{ qa.question }}
+    </div>
+    <hr>
+    <div class="answer px-3">
+        <pre><code class="hljs language-{{ qa.answer.language }}">{{ qa.answer.code }}</code></pre>
+    </div>
+</div>
+{% endif %}

@@ -1,7 +1,7 @@
 {
     "name": "liuwen",
     "productName": "LiuWen",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "LiuWen markdown editor",
     "isDev": false,
     "main": "src/index.js",
@@ -23,7 +23,8 @@
     "config": {
         "forge": {
             "packagerConfig": {
-                "icon": "./src/static/icons/icon-full.icns"
+                "icon": "./src/static/icons/icon-full.icns",
+                "executableName": "liuwen"
             },
             "makers": [
                 {
@@ -40,11 +41,15 @@
                 },
                 {
                     "name": "@electron-forge/maker-deb",
-                    "config": {}
+                    "config": {
+                        "setupIcon": "./src/static/logo.ico"
+                    }
                 },
                 {
                     "name": "@electron-forge/maker-rpm",
-                    "config": {}
+                    "config": {
+                        "setupIcon": "./src/static/logo.ico"
+                    }
                 }
             ]
         }

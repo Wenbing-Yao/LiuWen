@@ -16,6 +16,11 @@
                     <input id="id-article-{{ art.id }}-tags" class="form-control dark shadow-none border-radius-none artinput" field-type="tags" placeholder="{{'Tags'|trans}}" value="{{ art.tags | join(',') }}" artid="{{art.id}}">
                     <div class="w-100 artinput-tips">{{"Tips:"|trans}}{{"Separate with commas"|trans}} {{"(Max: 5)"|trans}}</div>
                 </div>
+                <div class="playground pb-2 form-check">
+                    <label class="form-check-label ms-2" for="id-article-{{ art.id }}-playground">{{'Submit To Playground'|trans}}</label>
+                    <input id="id-article-{{ art.id }}-playground" class="form-check-input shadow-none artinput" type="checkbox" field-type="playground" artid="{{art.id}}"
+                            {% if art.playground %}checked{% endif %} {% if art.synced %}disabled{% endif %}>
+                </div>
                 <div class="pb-2">
                 </div>
                 <div class="row mt-2">

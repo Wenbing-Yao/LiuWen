@@ -1,7 +1,17 @@
 const marked = require('marked')
 const { v4: uuidv4 } = require('uuid');
+const { configure } = require('nunjucks')
 const path = require('path')
 const JSSoup = require('jssoup').default
+const { getLogger } = require('../modules/render/utils')
+const { trans } = require('../locale/i18n');
+const { IAEncoder } = require('./IAComponent')
+
+const QCE = 'CODE_EXECUTION'
+const QSL = 'SELECTION'
+const QSP = 'SIMPLE'
+
+const logger = getLogger(__filename)
 
 const renderer = {
     table(header, body) {
@@ -90,6 +100,143 @@ const richimage = {
     }
 }
 
+
+function extract_qa_content(question, trim = true) {
+    var qts = []
+    for (let line of question.trim().split('\n')) {
+        let s = line.substring(1)
+        if (trim) {
+            s = s.trim()
+        }
+        if (s.length)
+            qts.push(s)
+    }
+    return qts.join('\n')
+}
+
+function parse_qa_code(src) {
+    const rule = /\`{3}(?<language>\w*)\s*\n(?<code>((?![\`]).*\n)*)[\`]{3}/
+
+    var matched = rule.exec(src)
+    if (!matched) {
+        return {
+            language: "",
+            code: ""
+        }
+    }
+
+    return matched.groups
+}
+
+function parse_qa_selections(src) {
+    var selections = []
+    const rule = /\[(?<is_correct>[YNyn])\]\s*(?<desc>[^\n]*)/
+    for (let line of src.split('\n')) {
+        if (!line) continue
+
+        var matched = rule.exec(line)
+        if (!matched) {
+            logger.info(`line not match: ${line}`)
+            continue
+        }
+
+        selections.push(matched.groups)
+    }
+
+    return selections
+}
+
+const questions = {
+    name: 'questions',
+    level: 'block',
+    start(src) {
+        const rule = /^:~~(.*)~~/
+        var matched = rule.exec(src)
+        if (matched) return matched.index
+    },
+    tokenizer(src) {
+        const rule = /^:~~\s*QA-(?<qtype>[^\n]*)~~[ \t]*\n(?<question>(:(?<![-])[^-\n]*\n)+):--\s*\n(?<answer>(:(?<![~])[^~\n]*\n)+):[~]{4}[ \t]*/
+        const matched = rule.exec(src)
+        if (!matched) {
+            return false
+        }
+
+        var qtype = matched.groups.qtype.trim()
+        var answer = ""
+        let mid = extract_qa_content(matched.groups.answer)
+
+        var res = {
+            type: 'questions',
+            raw: matched[0],
+            qtype: qtype,
+            question: extract_qa_content(matched.groups.question)
+        }
+
+        if (qtype == QSP) {
+            answer = mid
+        } else if (qtype == QCE) {
+            answer = parse_qa_code(extract_qa_content(matched.groups.answer, false))
+        } else if (qtype == QSL) {
+            answer = parse_qa_selections(mid)
+        }
+
+        res.answer = answer
+        return res
+    },
+    renderer(token) {
+        var template = null
+        switch (token.qtype) {
+            case QSP: template = 'simple.html'; break;
+            case QCE: template = 'code.html'; break;
+            case QSL: template = 'selection.html'; break;
+            default: {
+                logger.info(`question type ${token.qtype} not match!`)
+                return ""
+            }
+        }
+
+        let env = configure(path.join(__dirname, '../templates/snipets/qas/'))
+        env.addFilter('trans', trans)
+
+        var res = env.render(template, {
+            'qa': token
+        })
+
+        return res
+    }
+}
+
+const richstrong = {
+    name: 'richstrong',
+    level: 'inline',
+    start(src) {
+        const rule = /(?<![\\*_])[*_]{1,3}(?![*_])/
+        var matched = rule.exec(src)
+        if (matched) return matched.index
+    },
+    tokenizer(src) {
+        const rule = /^([*_]{1,3})([^*_]+)\1(?![*_])/
+        var matched = rule.exec(src)
+        if (!matched) return false
+        var TAGS = {
+            1: 'em',
+            2: 'strong',
+            3: 'emstrong'
+        }
+        var inlineContents = []
+        this.lexer.inline(matched[2], inlineContents)
+        return {
+            type: 'richstrong',
+            raw: matched[0],
+            tag: TAGS[matched[1].length],
+            content: inlineContents
+        }
+    },
+    renderer(token) {
+        return `<${token.tag}>${this.parser.parseInline(token.content)}</${token.tag}>`
+    }
+}
+
 const inlinelatex = {
     name: 'inlinelatex',
     level: 'inline',
@@ -149,7 +296,7 @@ marked.setOptions({
     // },
     langPrefix: 'hljs language-'
 })
-marked.use({ extensions: [richimage, blocklatex, inlinelatex], renderer })
+marked.use({ extensions: [richimage, blocklatex, inlinelatex, richstrong, questions], renderer })
 
 class ToCNode {
     constructor(id, title, level, children, parent, tag = 'ol') {
@@ -230,8 +377,8 @@ class Markdown {
         this.marked = marked
         this.dirRoot = null
         this.soup = null
-        this.figPrefix = '图'
-        this.figSuffix = '：'
+        this.figPrefix = trans('图')
+        this.figSuffix = trans('：')
         this.figNumber = 1
         this.relDir = relDir
     }

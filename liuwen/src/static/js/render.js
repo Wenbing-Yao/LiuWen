@@ -207,6 +207,15 @@ $(() => {
     $("body").on("change", ".artinput", (event) => {
         event.preventDefault()
 
+        if (event.currentTarget.type === 'checkbox') {
+
+            window.article.articleMetaChange(
+                event.currentTarget.getAttribute("artid"),
+                event.currentTarget.getAttribute("field-type"),
+                event.currentTarget.checked)
+            return
+        }
+
         window.article.articleMetaChange(
             event.currentTarget.getAttribute("artid"),
             event.currentTarget.getAttribute("field-type"),
