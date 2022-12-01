@@ -3,10 +3,12 @@ const path = require('path')
 const { prepareDir } = require('../modules/backend/utils')
 const { isDev, dirConfig } = require('../modules/config')
 const { getLogger } = require('../modules/render/utils')
+const { Markdown } = require('./LiuwenMarkDown')
 
 const logger = getLogger(__filename)
 let modalBuf = new Map()
 let articleDeleteBuf = new Map()
+let articlePreviewModal = null
 
 const articleDeleteKey = 'art-delete'
 const isMac = process.platform === 'darwin'
@@ -51,7 +53,7 @@ function buildLocaleDelete(callback) {
 
     env = configure(path.dirname(__dirname))
     env.addFilter('trans', trans)
-    let index_fpath = path.join(path.dirname(__dirname), './templates/article/delete.html')
+    let index_fpath = path.join(path.dirname(__dirname), './templates/article/preview.html')
     env.render(index_fpath, {
         rel_proj_root: project_root_abs
     }, (err, res) => {
@@ -91,7 +93,8 @@ function openArticleDeleteModal(localId, parent) {
             show: false,
             title: _('Delete Article'),
             webPreferences: {
-                'preload': path.join(__dirname, '../preloads/articleDeletePreload.js')
+                'preload': path.join(__dirname, '../preloads/articleDeletePreload.js'),
+                'sandbox': false
             }
         }
         if (!isMac) {
@@ -120,6 +123,106 @@ function openArticleDeleteModal(localId, parent) {
     }
 }
 
+function buildLocalePreview(localId, callback) {
+    const { app } = require('electron')
+    const { configure } = require('nunjucks')
+    const {
+        getLanguage
+    } = require('../locale/i18n')
+    const { trans } = require('../locale/i18n')
+    const { settingStorage } = require('../modules/UserSettings')
+    const { ArticleStorage } = require('../modules/ArticleStorage')
+    let ofpath = path.join(dirConfig.localeDir(),
+        `src/templates/langs/article/delete-${app.getVersion()}-${getLanguage()}.html`
+    )
+    prepareDir(ofpath)
+
+    let project_root_abs = path.resolve(path.dirname(path.dirname(__dirname)))
+
+    var store = new ArticleStorage(settingStorage.getUsername())
+    var art = store.getArticle(localId)
+    let md = new Markdown(art.filePath ? path.dirname(art.filePath) : null)
+    art.content = md.convert(art.mdContent, true, true)
+
+    env = configure(path.dirname(__dirname))
+    env.addFilter('trans', trans)
+    let index_fpath = path.join(path.dirname(__dirname), './templates/article/preview.html')
+    env.render(index_fpath, {
+        rel_proj_root: project_root_abs,
+        'art': art
+    }, (err, res) => {
+        if (err) {
+            logger.error(err)
+            return
+        }
+        const { writeFileSync } = require('fs')
+        writeFileSync(ofpath, res)
+        callback(ofpath)
+    })
+
+    return ofpath
+}
+
+function openArticlePreviewModal(localId, parent) {
+
+    const {
+        addSupportedLanguage,
+        setLocaleLang
+    } = require('../locale/i18n')
+
+    setLocaleLang(getLocaleLanguage())
+    addSupportedLanguage(getLocaleSupportedLanguage())
+
+    const { BrowserWindow } = require('electron')
+    const { trans: _ } = require('../locale/i18n')
+
+    const options = {
+        width: 1024,
+        height: 768,
+        parent: parent,
+        modal: true,
+        show: false,
+        title: _('Preview'),
+        webPreferences: {
+            'preload': path.join(__dirname, '../preloads/articlePreview.js')
+        }
+    }
+    if (!isMac) {
+        options.frame = false
+        options.titleBarStyle = 'hidden'
+    }
+
+    if (articlePreviewModal != null) {
+        articlePreviewModal.close()
+        articlePreviewModal = null
+    }
+    var preview = new BrowserWindow(options)
+    articlePreviewModal = preview
+
+    buildLocalePreview(localId, (src) => preview.loadFile(src))
+    preview.once('ready-to-show', () => {
+        preview.show()
+    })
+    // preview.on('closed', () => {
+    // })
+
+    if (isDev) {
+        preview.webContents.openDevTools();
+    }
+}
+
+
+function closeArticlePreviewModal(localId) {
+    if (articlePreviewModal != null) {
+        logger.info(`Close preview model for ${localId}`)
+        articlePreviewModal.close()
+        articlePreviewModal = null
+    } else {
+        logger.warn(`Preview modal is null!`)
+    }
+}
+
+
 function closeArticleDeleteModal(localId) {
     articleDeleteBuf.delete(localId)
     var modal = modalBuf.get(articleDeleteKey)
@@ -142,5 +245,7 @@ function fetchLocalId() {
 module.exports = {
     closeArticleDeleteModal,
     fetchLocalId,
-    openArticleDeleteModal
+    openArticleDeleteModal,
+    openArticlePreviewModal,
+    closeArticlePreviewModal
 }

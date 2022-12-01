@@ -1,25 +1,35 @@
-<div class="tab-pane h-100 w-100" id="editing-detail-panel-{{ art.id }}" role="tabpanel" aria-labelledby="editing-detail-tab-{{ art.id }}">
+<div class="tab-pane h-100 w-100" id="editing-detail-panel-{{ art.id }}" role="tabpanel"
+    aria-labelledby="editing-detail-tab-{{ art.id }}">
     <div class="d-flex w-100 h-100">
         <div id="issued-article-basic-box-{{ art.id }}" class="issued-article-basic justify-content-between">
             <div class="mb-auto">
                 <div class="title pb-2">
-                    <input id="id-article-{{ art.id }}-paper-id" class="form-control dark shadow-none border-radius-none artinput" field-type="paperId" placeholder="{{'Paper ID'|trans}}" value="{{ art.paperId }}" artid="{{art.id}}">
+                    <input id="id-article-{{ art.id }}-paper-id"
+                        class="form-control dark shadow-none border-radius-none artinput" field-type="paperId"
+                        placeholder="{{'Paper ID'|trans}}" value="{{ art.paperId }}" artid="{{art.id}}">
                 </div>
                 <div class="title pb-2">
-                    <input id="id-article-{{ art.id }}-title" class="form-control dark shadow-none border-radius-none artinput" field-type="title" placeholder="{{'Title'|trans}}" {% if art.paperIdValid %} value="{{ art.paperTitle }}" disabled {% else %} value="{{ art.title }}"
-                        {% endif %} artid="{{art.id}}">
+                    <input id="id-article-{{ art.id }}-title"
+                        class="form-control dark shadow-none border-radius-none artinput" field-type="title"
+                        placeholder="{{'Title'|trans}}" {% if art.paperIdValid %} value="{{ art.paperTitle }}" disabled
+                        {% else %} value="{{ art.title }}" {% endif %} artid="{{art.id}}">
                 </div>
                 <div class="desc pb-2">
-                    <textarea id="id-article-{{ art.id }}-desc" class="form-control dark shadow-none border-radius-none artinput" field-type="desc" placeholder="{{'Introduction'|trans}}" rows="6" artid="{{art.id}}">{{ art.desc }}</textarea>
+                    <textarea id="id-article-{{ art.id }}-desc"
+                        class="form-control dark shadow-none border-radius-none artinput" field-type="desc"
+                        placeholder="{{'Introduction'|trans}}" rows="6" artid="{{art.id}}">{{ art.desc }}</textarea>
                 </div>
                 <div class="tags pb-2">
-                    <input id="id-article-{{ art.id }}-tags" class="form-control dark shadow-none border-radius-none artinput" field-type="tags" placeholder="{{'Tags'|trans}}" value="{{ art.tags | join(',') }}" artid="{{art.id}}">
+                    <input id="id-article-{{ art.id }}-tags"
+                        class="form-control dark shadow-none border-radius-none artinput" field-type="tags"
+                        placeholder="{{'Tags'|trans}}" value="{{ art.tags | join(',') }}" artid="{{art.id}}">
                     <div class="w-100 artinput-tips">{{"Tips:"|trans}}{{"Separate with commas"|trans}} {{"(Max: 5)"|trans}}</div>
                 </div>
                 <div class="playground pb-2 form-check">
                     <label class="form-check-label ms-2" for="id-article-{{ art.id }}-playground">{{'Submit To Playground'|trans}}</label>
-                    <input id="id-article-{{ art.id }}-playground" class="form-check-input shadow-none artinput" type="checkbox" field-type="playground" artid="{{art.id}}"
-                            {% if art.playground %}checked{% endif %} {% if art.synced %}disabled{% endif %}>
+                    <input id="id-article-{{ art.id }}-playground" class="form-check-input shadow-none artinput"
+                        type="checkbox" field-type="playground" artid="{{art.id}}" {% if art.playground %}checked{%
+                        endif %} {% if art.synced %}disabled{% endif %}>
                 </div>
                 <div class="pb-2">
                 </div>
@@ -28,8 +38,10 @@
                 </div>
             </div>
         </div>
-        <div style="width: 14px; background-color:#333;">
-            <a default-char="&lt;" hidden-char="&gt;" id="hide-article-{{ art.id }}-basic" class="hide-article-basic" role="hide" target-id="issued-article-basic-box-{{ art.id }}" style="position: relative; top: 50%; text-align:center; padding: 3px 1px; cursor:pointer; display:block;">&lt;</a>
+        <div class="h-100 flex-column" style="width: 12px; background-color:#333;">
+            <a default-char="&lt;" hidden-char="&gt;" id="hide-article-{{ art.id }}-basic" class="hide-article-basic"
+                role="hide" target-id="issued-article-basic-box-{{ art.id }}"
+                style="font-size: 12px; position: relative; top: 50%; text-align:center; padding: 3px 0px; cursor:pointer; display:block;">&lt;</a>
         </div>
         <div style="flex: 1; width:0; min-width:0">
             {% include 'editing-panel-md.html' %}

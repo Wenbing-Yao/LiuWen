@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{"Preview"|trans}}</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <link rel="stylesheet" href="{{ rel_proj_root }}/node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ rel_proj_root }}/node_modules/highlight.js/styles/monokai.css">
+    <link rel="stylesheet" href="{{ rel_proj_root }}/src/static/css/index.css">
+    <link rel="stylesheet" href="{{ rel_proj_root }}/src/static/css/article-themes/dark.css">
+    <style>
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="dark liuwen">
+    <div class="w-100">
+        <div class="d-flex justify-content-between p-3 sticky-top">
+            <div class="h5 mb-4"><small>{{"Article Preview"|trans}}</small></div>
+            <div id="article-preview-close-modal" class="modal-close-area"><a>X</a></div>
+        </div>
+        <div id="id-article" class="d-flex article-preview-detail">
+            {% include '../snipets/article-preview-content.html' %}
+        </div>
+    </div>
+
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [
+                    ['$', '$'],
+                    ['\\(', '\\)']
+                ]
+            }
+        };
+    </script>
+    <script type="text/javascript" src="{{ rel_proj_root }}/src/static/jslibs/mathjax/tex-mml-chtml.js"></script>
+    <script src="{{ rel_proj_root }}/node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="{{ rel_proj_root }}/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ rel_proj_root }}/src/static/jslibs/highlight.min.js"></script>
+    <script src="{{ rel_proj_root }}/src/static/js/article/preview.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+
+</html>

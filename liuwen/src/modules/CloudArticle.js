@@ -15,6 +15,9 @@ const { IAEncoder } = require('./IAComponent')
 
 const logger = getLogger(__filename)
 
+function onlyUnique(value, index, self) {
+    return self.indexOf(value) === index;
+}
 
 function fileExists(fpath) {
     try {
@@ -43,6 +46,7 @@ class CloudArticle {
         this.username = username
         this.client = new PaperExplainedClient('articles', username)
         this.iclient = new PaperExplainedClient('aplayground', username)
+        this.fclient = new PaperExplainedClient('fileuploader', username)
         this.store = getStorage(username)
         this.workon = WORK_BASE
     }
@@ -98,6 +102,75 @@ class CloudArticle {
         return url.protocol === "http:" || url.protocol === "https:";
     }
 
+    fileExists(hexdigest, success, error) {
+        return this.fclient.get('fileExists', (info) => {
+            return success(info.exists, info.url)
+        }, error, {
+            'hexdigest': hexdigest
+        })
+    }
+
+    uploadFile(source, pure, success, error) {
+        const hexdigest = md5File.sync(source)
+        return this.fileExists(hexdigest, (exists, fileUrl) => {
+            if (exists) {
+                logger.info(`files exists: ${fileUrl}`)
+                if (pure) {
+                    success(fileUrl)
+                } else {
+                    success(`file exists: ${fileUrl}`)
+                }
+                return fileUrl
+            }
+        }, error).then(info => {
+            if (info.exists) {
+                logger.info(`file exists: ${info.url}`)
+                return info.url
+            }
+            logger.info(`Start upload image: ${source}`)
+            return this.fclient.post('uploadFile', {
+                hexdigest: hexdigest
+            }, {
+                file: source
+            }, (uploadRes) => {
+                if (pure) {
+                    success(uploadRes.file)
+                } else {
+                    success(`file exists: ${uploadRes.file}`)
+                }
+                return uploadRes.file
+            }).then(info => {
+                return info.file
+            })
+        })
+    }
+
+    prepareFile(source, workon, success, error) {
+        source = decodeURI(source)
+        source = source.replaceAll("&#32;", " ")
+        if (fileExists(source)) {
+            return this.uploadFile(source, true, success, error)
+        }
+
+        if (!this.isValidHttpUrl(source)) {
+            logger.info('Not local file and invalid URL', source)
+            return source
+        }
+
+        let fpath = path.join(workon, path.basename(source))
+        if (fileExists(fpath)) {
+            return this.uploadFile(fpath, true, success, error)
+        } else {
+            logger.info('Not local file, try to download:', fpath)
+        }
+
+        return this.download(source, workon, (ofname) => {
+            return this.uploadFile(path.join(workon, ofname), true, success, error)
+        }, () => {
+            logger.error(`Prepare file, download failed: ${source}`)
+        })
+    }
+
     prepareImage(source, workon, success, error) {
         source = decodeURI(source)
         source = source.replaceAll("&#32;", " ")
@@ -125,9 +198,11 @@ class CloudArticle {
     }
 
     imageExists(hexdigest, success, error) {
-        return this.client.post('imageExists', { hexdigest: hexdigest }, null, (info) => {
+        return this.fclient.get('imageExists', (info) => {
             return success(info.exists, info.url)
-        }, error)
+        }, error, {
+            'hexdigest': hexdigest
+        })
     }
 
     uploadImage(source, pure, success, error) {
@@ -139,7 +214,7 @@ class CloudArticle {
         const hexdigest = md5File.sync(source)
         return this.imageExists(hexdigest, (exists, imageUrl) => {
             if (exists) {
-                console.info('图片已存在，无需再次上传:', source)
+                logger.info(`图片已存在，无需再次上传: ${source}`)
                 if (pure) {
                     success(imageUrl)
                 } else {
@@ -155,7 +230,7 @@ class CloudArticle {
                 return info.url
             } else {
                 logger.info(`Start upload image: ${source}`)
-                return this.client.post('uploadImage', {
+                return this.fclient.post('uploadImage', {
                     hexdigest: hexdigest
                 }, {
                     image: source
@@ -187,7 +262,12 @@ class CloudArticle {
         })
     }
 
-    articleDelete(articleId, success, error) {
+    articleDelete(articleId, isPlayground, success, error) {
+        if (isPlayground) {
+            return this.iclient.get('iarticleDelete', success, error, {
+                iarticle_id: articleId
+            })
+        }
         this.client.get('articleDelete', success, error, {
             article_id: articleId
         })
@@ -197,15 +277,17 @@ class CloudArticle {
         this.client.post('articleTitle', { article_id: articleId }, null, success, error)
     }
 
-    uploadAndReplaceImage(html, paperId, rehash, sfpath, success, error) {
+    uploadAndReplaceFiles(html, paperId, rehash, sfpath, success, error) {
         var soup = new JSSoup(html)
+
+        // fetch images to be uploaded
         var imgs = soup.findAll('img')
-        var imageSources = []
+        var _imageSources = []
         for (let img of imgs) {
             if (!img.attrs.src) {
                 continue
             }
-            imageSources.push(img.attrs.src.trim())
+            _imageSources.push(img.attrs.src.trim())
         }
         if (rehash) {
             paperId = md5(paperId)
@@ -213,27 +295,63 @@ class CloudArticle {
         var workon = path.join(this.workon, paperId)
         mkdirSync(workon, { recursive: true })
 
-        var imageUrls = []
+        var imageSources = _imageSources.filter(onlyUnique)
+        var waitingUrls = []
         for (let ipath of imageSources) {
             if (sfpath && ipath.startsWith('.')) {
                 ipath = path.join(path.dirname(sfpath), ipath)
             }
-            imageUrls.push(this.prepareImage(
+            waitingUrls.push(this.prepareImage(
                 ipath, workon,
                 info => logger.info('upload image success:', info),
                 err => logger.error('upload image failed:', err)))
         }
 
-        Promise.all(imageUrls).then((values) => {
+        // fetch files to be uploaded
+        var links = soup.findAll('a')
+        var fileSources = []
+        for (let link of links) {
+            if (!link.attrs.role || link.attrs.role != 'mdlink' || !link.attrs.href) {
+                continue
+            }
+            fileSources.push(link.attrs.href)
+        }
+        fileSources = fileSources.filter(onlyUnique)
+        for (let ipath of fileSources) {
+            if (sfpath && ipath.startsWith('.')) {
+                ipath = path.join(path.dirname(sfpath), ipath)
+            }
+
+            waitingUrls.push(this.prepareFile(
+                ipath, workon,
+                info => logger.info('upload image success:', info),
+                err => logger.error('upload image failed:', err)
+            ))
+        }
+
+        let waitingSources = imageSources.concat(fileSources)
+
+        Promise.all(waitingUrls).then((values) => {
             var urlMap = {}
             urlMap.sfpath = sfpath
-            for (let i in imageSources) {
-                urlMap[imageSources[i]] = values[i]
+            for (let i in waitingSources) {
+                if (values[i]) {
+                    urlMap[waitingSources[i]] = values[i]
+                }
             }
             imgs = soup.findAll('img')
             for (let img of imgs) {
                 if (urlMap[img.attrs.src]) {
                     img.attrs.src = urlMap[img.attrs.src]
+                }
+            }
+
+            for (let link of links) {
+                if (!link.attrs.role || link.attrs.role != 'mdlink' || !link.attrs.href) {
+                    continue
+                }
+                if (link.attrs.href) {
+                    link.attrs.href = urlMap[link.attrs.href]
                 }
             }
             return success(soup.toString(), urlMap)
@@ -257,7 +375,7 @@ class CloudArticle {
             html = readFileSync(fpath)
         }
 
-        this.uploadAndReplaceImage(html, paperId, false, fpath, (content, urlMap) => {
+        this.uploadAndReplaceFiles(html, paperId, false, fpath, (content, urlMap) => {
             let artInfo = {
                 paper: paperId,
                 tags: tags,
@@ -291,7 +409,7 @@ class CloudArticle {
             html = readFileSync(fpath)
         }
 
-        this.uploadAndReplaceImage(html, paperId, false, fpath, (content, urlMap) => {
+        this.uploadAndReplaceFiles(html, paperId, false, fpath, (content, urlMap) => {
             var artInfo = { content: content }
             if (md) {
                 if (urlMap) {
@@ -319,7 +437,7 @@ class CloudArticle {
             html = readFileSync(fpath)
         }
 
-        this.uploadAndReplaceImage(html, title, rehash, fpath, (content, urlMap) => {
+        this.uploadAndReplaceFiles(html, title, rehash, fpath, (content, urlMap) => {
             var artInfo = { content: content }
             if (md) {
                 if (urlMap) {
@@ -370,7 +488,7 @@ class CloudArticle {
             html = readFileSync(fpath)
         }
 
-        this.uploadAndReplaceImage(html, title, true, fpath, (content, urlMap) => {
+        this.uploadAndReplaceFiles(html, title, true, fpath, (content, urlMap) => {
             var artInfo = {
                 article_title: title,
                 tags: tags,
@@ -453,7 +571,7 @@ class CloudArticle {
             html = readFileSync(fpath)
         }
 
-        this.uploadAndReplaceImage(html, paperId || title, !paperId, fpath, (content, urlMap) => {
+        this.uploadAndReplaceFiles(html, paperId || title, !paperId, fpath, (content, urlMap) => {
             let artInfo = {
                 paper: paperId,
                 special_title: title,
@@ -506,7 +624,7 @@ class CloudArticle {
             html = readFileSync(fpath)
         }
 
-        this.uploadAndReplaceImage(html, paperId || title, !paperId, fpath, (content, urlMap) => {
+        this.uploadAndReplaceFiles(html, paperId || title, !paperId, fpath, (content, urlMap) => {
             let artInfo = {
                 paper: paperId,
                 special_title: title,

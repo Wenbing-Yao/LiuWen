@@ -45,15 +45,15 @@ function registerHide(eleId) {
         var $target = $("#" + targetId);
         var curDis = $target.css('display')
         if (curDis == 'none') {
-            var preDis = displayBuffer.get(eleId)
+            var preDis = displayBuffer.get(targetId)
             if (!preDis) {
                 preDis = 'block';
             }
-            displayBuffer.delete(eleId)
+            displayBuffer.delete(targetId)
             $target.css('display', preDis);
             $ele.text($ele.attr('default-char'));
         } else {
-            displayBuffer.set(eleId, curDis);
+            displayBuffer.set(targetId, curDis);
             $target.css('display', 'none');
             $ele.text($ele.attr('hidden-char'));
         }
@@ -204,6 +204,12 @@ $(() => {
         }
     })
 
+    $('body').on('click', '.editing-preview', (event) => {
+        let articleId = $(event.currentTarget).attr("article-id")
+        if (articleId)
+            window.article.previewArticle(articleId)
+    })
+
     $("body").on("change", ".artinput", (event) => {
         event.preventDefault()
 
@@ -251,15 +257,72 @@ $(() => {
         }
     })
 
+    var indexTabPreActiveTargetId = null;
+    const indexTabs = document.querySelectorAll(".index-nav-tab");
+    indexTabs.forEach(el => {
+        if (el.querySelector("a").classList.contains("active")) {
+            indexTabPreActiveTargetId = el.getAttribute("hidden-target")
+        }
+    })
+
+    $("body").on("click", ".index-nav-tab", (event) => {
+        let targetId = event.currentTarget.getAttribute("hidden-target")
+        if (!targetId) {
+            return
+        }
+
+        if (indexTabPreActiveTargetId != targetId) {
+            indexTabPreActiveTargetId = targetId
+            return
+        }
+
+        indexTabPreActiveTargetId = targetId
+
+        let $target = $(`#${targetId}`)
+        if (!$target) {
+            return
+        }
+
+        var curDis = $target.css('display')
+
+        if (curDis == 'none') {
+            var preDis = displayBuffer.get(targetId)
+            if (!preDis) {
+                preDis = 'block';
+            }
+            displayBuffer.delete(targetId)
+            $target.css('display', preDis);
+        } else {
+            displayBuffer.set(targetId, curDis);
+            $target.css('display', 'none');
+        }
+    })
+
     $('[data-bs-toggle=tooltip]').each(function (index) {
         let ele = document.getElementById($(this).attr('id'))
         let tooltip = bootstrap.Tooltip.getOrCreateInstance(ele)
         tooltip.enable()
     })
 
-    $(document).on('click', 'a[href^="http"]', function (event) {
+    function isValidHttpUrl(string) {
+        let url;
+
+        try {
+            url = new URL(string);
+        } catch (_) {
+            return false;
+        }
+
+        return url.protocol === "http:" || url.protocol === "https:";
+    }
+
+    $(document).on('click', 'a', function (event) {
         event.preventDefault();
-        window.default.openExternalLink(this.href);
+        if (this.href && isValidHttpUrl(this.href)) {
+            window.default.openExternalLink(this.href);
+        } else {
+            window.default.openLocalFile(this.href);
+        }
     });
 
     setInterval(() => {

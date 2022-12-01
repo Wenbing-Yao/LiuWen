@@ -7,7 +7,7 @@ function readJsonFile(fpath) {
 
     try {
         data = JSON.parse(readFileSync(fpath))
-    } catch (err) {}
+    } catch (err) { }
 
     return data
 }
@@ -23,6 +23,8 @@ function updateJsonFile(fpath, info) {
 
 
 class SettingStorage {
+    DefaultUnkownUserName = "LocalUnkownUser"
+
     constructor() {
         this.filePath = dirConfig.settingsPath()
         this.settings = readJsonFile(this.filePath)
@@ -41,7 +43,7 @@ class SettingStorage {
     }
 
     getUsername() {
-        return this.settings.username
+        return this.settings.username || this.DefaultUnkownUserName
     }
 
     getUserinfo() {

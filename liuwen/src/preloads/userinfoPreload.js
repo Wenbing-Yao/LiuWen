@@ -1,4 +1,3 @@
-const { configure } = require('nunjucks')
 const { contextBridge, ipcRenderer } = require('electron')
 const path = require('path')
 const { getLogger } = require('../modules/render/utils')
@@ -15,6 +14,7 @@ function logout() {
 }
 
 function loadUserinfo(user) {
+    const { configure } = require('nunjucks')
     env = configure(path.join(__dirname, '../templates'))
     env.render(USERINFO_TEMPLATE_NAME, {
         user: user

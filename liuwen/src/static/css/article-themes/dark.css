@@ -282,6 +282,10 @@ body.dark {
     color: #dedede;
 }
 
+.dark .article .table {
+    color: #dedede;
+}
+
 .dark .article img {
     background-color: #cccccc;
     padding: 10px;
@@ -413,13 +417,30 @@ body.dark {
 }
 
 .dark .editor-head .btn.syn-to-cloud,
-.dark .editor-head .btn.article-issue {
+.dark .editor-head .btn.article-issue,
+.dark .editor-head .btn.editing-preview {
     color: #ccc;
+    border: none;
     box-shadow: none;
     padding: 6px 6px 6px 6px;
 }
 
 .dark .editor-head .btn.syn-to-cloud:hover,
-.dark .editor-head .btn.article-issue:hover {
+.dark .editor-head .btn.article-issue:hover,
+.dark .editor-head .btn.editing-preview:hover {
     color: #fff;
+    border: none;
+    box-shadow: none;
+}
+
+.dark .link-register {
+    color: #999;
+    font-weight: 300;
+    text-decoration: none;
+}
+
+.dark .link-register:hover {
+    color: #ccc;
+    font-weight: 300;
+    text-decoration: none;
 }

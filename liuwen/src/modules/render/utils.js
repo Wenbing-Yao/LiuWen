@@ -2,26 +2,25 @@ const path = require('path')
 
 const isDev = false
 
-
-function filename(fpath) {
-    return path.basename(fpath)
+function filename (fpath) {
+  return path.basename(fpath)
 }
 
-function getLogger(filename) {
-    const electronLog = require('electron-log')
-    const log = electronLog.create(filename)
+function getLogger (filename) {
+  const electronLog = require('electron-log')
+  const log = electronLog.create(filename)
 
-    let prefix = isDev ? 'dev' : 'prod'
-    log.transports.file.fileName = `${prefix}-${log.transports.file.fileName}`
-    log.transports.console.level = isDev ? true : false
+  let prefix = isDev ? 'dev' : 'prod'
+  log.transports.file.fileName = `${prefix}-${log.transports.file.fileName}`
+  log.transports.console.level = isDev ? true : false
 
-    log.info(`Start a logger for ${filename}`)
+  log.info(`Start a logger for ${filename}`)
 
-    return log
+  return log
 }
 
 module.exports = {
-    filename,
-    getLogger,
-    isDev
+  filename,
+  getLogger,
+  isDev
 }

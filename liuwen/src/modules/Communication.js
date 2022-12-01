@@ -122,10 +122,10 @@ class PaperExplainedClient {
         if (!error) {
             error = err => {
                 try {
-                    logger.error(`post error: ${err.toString()}`)
+                    logger.error(`get error: ${err.toString()}`)
                 }
                 catch (exc) {
-                    logger.error(`post error: ${err.toString()}`)
+                    logger.error(`get error: ${err.toString()}`)
                 }
             }
         }

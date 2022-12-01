@@ -1,7 +1,7 @@
 {
     "name": "liuwen",
     "productName": "LiuWen",
-    "version": "1.0.5",
+    "version": "1.0.8",
     "description": "LiuWen markdown editor",
     "isDev": false,
     "main": "src/index.js",
@@ -16,21 +16,24 @@
     },
     "keywords": [],
     "author": {
-        "name": "Wenbing-Yao",
+        "name": "WenbingYao",
         "email": "thu-yaowenbing@outlook.com"
     },
     "license": "MIT",
     "config": {
         "forge": {
             "packagerConfig": {
-                "icon": "./src/static/icons/icon-full.icns",
+                "icon": "./src/static/icons/icon.icns",
                 "executableName": "liuwen"
             },
             "makers": [
                 {
                     "name": "@electron-forge/maker-squirrel",
                     "config": {
-                        "name": "liuwen"
+                        "name": "liuwen",
+                        "authors": "Wenbing-Yao",
+                        "description": "LiuWen markdown editor",
+                        "setupIcon": "./src/static/icons/icon.ico"
                     }
                 },
                 {
@@ -40,15 +43,27 @@
                     ]
                 },
                 {
+                    "name": "@electron-forge/maker-dmg",
+                    "config": {
+                        "icon": "./src/static/icons/icon.icns"
+                    }
+                },
+                {
                     "name": "@electron-forge/maker-deb",
                     "config": {
-                        "setupIcon": "./src/static/logo.ico"
+                        "options": {
+                          "icon": "./src/static/icons/icon.png"
+                        },
+                        "setupIcon": "./src/static/icons/icon.ico"
                     }
                 },
                 {
                     "name": "@electron-forge/maker-rpm",
                     "config": {
-                        "setupIcon": "./src/static/logo.ico"
+                        "options": {
+                          "icon": "./src/static/icons/icon.png"
+                        },
+                        "setupIcon": "./src/static/icons/icon.ico"
                     }
                 }
             ]
@@ -79,14 +94,12 @@
         "uuid": "^8.3.2"
     },
     "devDependencies": {
-        "@electron-forge/cli": "^6.0.0-beta.61",
-        "@electron-forge/maker-deb": "^6.0.0-beta.61",
-        "@electron-forge/maker-rpm": "^6.0.0-beta.61",
-        "@electron-forge/maker-squirrel": "^6.0.0-beta.61",
-        "@electron-forge/maker-zip": "^6.0.0-beta.61",
-        "electron": "^15.4.0",
-        "electron-rebuild": "^3.2.3",
-        "sequelize-cli": "^6.2.0"
-    },
-    "postinstall": "electron-builder install-app-deps"
+        "@electron-forge/cli": "^6.0.3",
+        "@electron-forge/maker-deb": "^6.0.3",
+        "@electron-forge/maker-dmg": "^6.0.3",
+        "@electron-forge/maker-rpm": "^6.0.3",
+        "@electron-forge/maker-squirrel": "^6.0.3",
+        "@electron-forge/maker-zip": "^6.0.3",
+        "electron": "^20.0.3"
+    }
 }

@@ -1,11 +1,10 @@
 const { contextBridge, ipcRenderer } = require('electron')
-const { configure } = require('nunjucks')
-const { Markdown } = require('./modules/LiuwenMarkDown')
 const path = require('path');
 const amdLoader = require('monaco-editor/min/vs/loader.js');
 const amdRequire = amdLoader.require;
 // const morphdom = require('morphdom');
 const { ArticleStateSync } = require('./modules/Task')
+const { Markdown } = require('./modules/LiuwenMarkDown')
 const {
     formatText,
     insertTableDetail,
@@ -488,6 +487,7 @@ contextBridge.exposeInMainWorld('testString', {
 })
 
 function getTemplateEnv() {
+    const { configure } = require('nunjucks')
     let env = configure(path.join(__dirname, 'templates'))
     env.addFilter('trans', trans)
     env.addFilter('filename', filename)
@@ -595,6 +595,9 @@ function addNewEditingPanel(article, show = false) {
         }
         ele.lastElementChild.insertAdjacentHTML('beforebegin', res)
         showEditingDetailTab(article)
+        if (article.paperId && !article.paperTitle) {
+            ipcRenderer.send('article:check-paper-id', article.id, article.paperId)
+        }
     })
 }
 
@@ -705,6 +708,9 @@ ipcRenderer.on('article:sync-to-local-reply', (event, article) => {
 })
 
 ipcRenderer.on('article:create-reply', (event, article) => {
+    if (!article) {
+        return
+    }
     addEditingToNew(article, true)
 
     ArticleInfoFetcher.clearAll()
@@ -783,11 +789,11 @@ function setCheckIndicator(articleId, ok) {
     var okEle = document.getElementById(`${ElementInfo.CheckOkIndicatorPrefix}${articleId}`)
     var nokEle = document.getElementById(`${ElementInfo.CheckNOkIndicatorPrefix}${articleId}`)
     if (ok) {
-        okEle.removeAttribute('hidden')
-        nokEle.setAttribute('hidden', 'hidden')
+        okEle?.removeAttribute('hidden')
+        nokEle?.setAttribute('hidden', 'hidden')
     } else {
-        okEle.setAttribute('hidden', 'hidden')
-        nokEle.removeAttribute('hidden')
+        okEle?.setAttribute('hidden', 'hidden')
+        nokEle?.removeAttribute('hidden')
     }
 }
 
@@ -838,6 +844,10 @@ function articleIssue(articleId) {
 
 function articleDelete(articleId) {
     ipcRenderer.send('article:delete', articleId, true, false)
+}
+
+function previewArticle(articleId) {
+    ipcRenderer.send('article:preview', articleId)
 }
 
 function articleInsertTable(row, col) {
@@ -1173,6 +1183,10 @@ function openExternalLink(link) {
     ipcRenderer.send('link:open', link)
 }
 
+function openLocalFile(fpath) {
+    ipcRenderer.send('localfile:open', fpath)
+}
+
 function setWinLogin(username) {
     // var ele = document.getElementById("usernameShown")
     // ele.innerText = username
@@ -1256,6 +1270,7 @@ function logPosition(x, y) {
     setPostionAtStart(getActiveEditor(), x, y)
 }
 
+
 contextBridge.exposeInMainWorld('monaco', {
     'initMarkdownEditor': initMarkdownEditor
 })
@@ -1269,7 +1284,8 @@ contextBridge.exposeInMainWorld('article', {
     'articleDelete': articleDelete,
     'articleInsertTable': articleInsertTable,
     'articleMetaChange': articleMetaChange,
-    'logPosition': logPosition
+    'logPosition': logPosition,
+    'previewArticle': previewArticle
 })
 
 contextBridge.exposeInMainWorld('profile', {
@@ -1279,5 +1295,6 @@ contextBridge.exposeInMainWorld('profile', {
 
 contextBridge.exposeInMainWorld('default', {
     'openExternalLink': openExternalLink,
+    'openLocalFile': openLocalFile,
     'fileDropped': fileDropped
 })
